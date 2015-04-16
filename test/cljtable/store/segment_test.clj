@@ -3,7 +3,7 @@
             [cljtable.store.segment :refer :all]))
 
 
-(def root-path "target/segments")
+(def root-path "target/segments/")
 
 (deftest roll-new-segment-test
   (testing "adding a new segment"

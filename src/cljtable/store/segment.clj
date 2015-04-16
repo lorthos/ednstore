@@ -1,9 +1,10 @@
 (ns cljtable.store.segment
   "all segment management is handled here,
   additional logic about merging should be handled here"
-  )
+  (:require [clojure.java.io :as io]
+            [nio.core :as nio]))
 
-(def old-segments (atom []))
+(def old-segments (atom {}))
 
 (def active-segment (atom nil))
 
@@ -32,6 +33,19 @@
   4.move old active segment to old-segment list
   "
   [id]
+  (let [segment-file (io/file (str id ".tbl"))
+        segment {:index      {}
+                 :write-chan (nio/writable-channel segment-file)
+                 :read-chan  (nio/readable-channel segment-file)}]
+    ;point to new active segment
+
+    (let [old-active @active-segment]
+      (reset! active-segment segment)
+      ;TODO close write channel of old-active
+      ;(.close (:write-chan old-active))
+      (swap! old-segments assoc (:id old-active) old-active)
+      )
+    )
   ;TODO
   )
 
