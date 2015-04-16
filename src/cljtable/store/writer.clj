@@ -1,4 +1,4 @@
-(ns cljtable.store.append
+(ns cljtable.store.writer
   (:import (java.nio.channels WritableByteChannel)
            (java.nio ByteBuffer))
   (:require [nio.core :as nio]
@@ -48,4 +48,22 @@
   (dorun (map #(.close ^WritableByteChannel %) (vals @chan-atom))))
 
 (close-channels! channels)
+
+(->> value
+     encode
+     append-to-log
+     get-end-offset
+     )
+
+(defn put!
+  "write to the active segment only, should not write to an inactive segment"
+  [^String entry-key ^String entry-value]
+  ;find the segments index
+  ;segments current offset will be the index value
+  ;append to file
+  ;update index
+  ;append segment offset counter
+  )
+
+(defn append! [segment])
 

@@ -1,6 +1,6 @@
 # cljtable
 
-A Clojure library designed to ... well, that part is up to you.
+Embeddable key value store for clojure
 
 ## Usage
 
