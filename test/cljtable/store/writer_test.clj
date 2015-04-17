@@ -2,6 +2,7 @@
   (:require [clojure.test :refer :all]
             [cljtable.store.writer :refer :all]
             [cljtable.store.segment :as seg]
+            [cljtable.store.reader :as rdr]
             [clojure.java.io :as io]
             [nio.core :as nio]
             ))
@@ -13,7 +14,7 @@
   (f)
   (seg/close-active-segment! @segment))
 
-(use-fixtures :once segment-fixture)
+(use-fixtures :each segment-fixture)
 
 
 (deftest wire-format-test
@@ -44,8 +45,8 @@
 (deftest put-to-active-segment
   (testing "segment, index and offset management when writing"
     ;index last-offset read-chan write-chan
-    (put! "A" "B" @segment)                                 ;offset 10
-    (put! "AAAA" "BBBB" @segment)                           ;offset 10+16
+    (write! "A" "B" @segment)                               ;offset 10
+    (write! "AAAA" "BBBB" @segment)                         ;offset 10+16
     ;validate index
     (is (= 2 (count (keys @(:index @segment)))))
     (is (= 26 @(:last-offset @segment)))
@@ -55,6 +56,8 @@
     ))
 
 (deftest read-from-segment
-
-  )
+  (testing "read key from segment file"
+    (write! "A" "B" @segment)                               ;offset 10
+    (write! "AAAA" "BBBB" @segment)                         ;offset 10+16
+    (is (nil? (rdr/read-direct "A" @segment)))))
 
