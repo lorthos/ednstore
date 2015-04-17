@@ -2,7 +2,8 @@
   "all segment management is handled here,
   additional logic about merging should be handled here"
   (:require [clojure.java.io :as io]
-            [nio.core :as nio]))
+            [nio.core :as nio])
+  (:import (java.nio.channels WritableByteChannel ReadableByteChannel)))
 
 (def old-segments (atom {}))
 
@@ -11,8 +12,15 @@
 ;maybe this is not a good idea
 ;can create top level atom for active index and write channels
 ;TODO
-(defrecord ActiveSegment [index read-chan write-chan])
-(defrecord ReadOnlySegment [index read-chan])
+(defrecord ActiveSegment [index last-offset ^ReadableByteChannel read-chan ^WritableByteChannel write-chan])
+(defrecord ReadOnlySegment [index ^ReadableByteChannel read-chan])
+
+(defn make-active-segment! [path]
+  (let [file (io/file path)]
+    (ActiveSegment. (atom {}) (atom 0) nil (nio/writable-channel file))))
+
+(defn close-active-segment! [^ActiveSegment segment]
+  (.close (:write-chan segment)))
 
 (defn load-segments!
   "load segments from folder - make newest the active segment.

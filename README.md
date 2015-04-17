@@ -1,6 +1,6 @@
 # cljtable
 
-Embeddable key value store for clojure
+Work in progress
 
 ## Usage
 
