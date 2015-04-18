@@ -9,7 +9,7 @@
   (testing "adding a new segment"
     ;TODO
     (is (nil? @active-segment))
-    (is (nil? (do
-                (roll-new-segment! 0)
-                @active-segment)))
+    (is ((comp not nil?) (do
+                           (roll-new-segment! 0)
+                           @active-segment)))
     ))

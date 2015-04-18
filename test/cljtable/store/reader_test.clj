@@ -21,4 +21,18 @@
     (is (= "B" (read-direct "A" @segment)))
     (is (= "BBBB" (read-direct "AAAA" @segment))))
   (testing "read when key does not exist"
-    (is (nil? (read-direct "NON_EXISTING_KEY" @segment)))))
+    (is (nil? (read-direct "NON_EXISTING_KEY" @segment))))
+  (testing "read when key is marked as deleted"
+    (is (= "BBBB" (read-direct "AAAA" @segment)))
+    (wrt/delete! "AAAA" @segment)
+    (is (nil? (read-direct "AAAA" @segment))))
+  (testing "when key is updated"
+    (wrt/write! "UPDATE" "V1" @segment)
+    (is (= "V1" (read-direct "UPDATE" @segment)))
+    (wrt/write! "UPDATE" "V2" @segment)
+    (is (= "V2" (read-direct "UPDATE" @segment)))
+    (wrt/delete! "UPDATE" @segment)
+    (is (nil? (read-direct "UPDATE" @segment)))
+    )
+
+  )

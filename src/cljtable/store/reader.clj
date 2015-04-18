@@ -14,7 +14,16 @@
     (.read chan buf)
     (String. (.array buf) "UTF-8")))
 
-(defn read-direct [^String key segment]
+(defn read-byte-from-chan [^SeekableByteChannel chan]
+  (let [buf (ByteBuffer/allocate 1)]
+    (.read chan buf)
+    (.flip buf)
+    (.get buf)))
+
+(defn read-direct
+  "should only read values that are not deleted
+  old indexes might still contain deleted-record's key"
+  [^String key segment]
   (let [offset (get @(:index segment) key nil)
         chan (:read-chan segment)]
     (if offset
@@ -22,9 +31,11 @@
         (.position ^SeekableByteChannel chan offset)
         (let [kl (read-int-from-chan chan)
               k (read-str-from-chan chan kl)
-              vl (read-int-from-chan chan)
-              v (read-str-from-chan chan vl)]
-          v))
+              op_type (read-byte-from-chan chan)]
+          (if-not (= (byte 0) op_type)
+            (let [vl (read-int-from-chan chan)
+                  v (read-str-from-chan chan vl)]
+              v))))
       nil)))
 
 

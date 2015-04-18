@@ -8,18 +8,32 @@
   )
 
 
-(defn get-log-line
-  "format will be: LENGTH:KEY:LENGTH:VALUE"
+(defn get-log-to-write
+  "format will be: LENGTH:KEY:OP_TYPE:LENGTH:VALUE"
   [#^bytes k #^bytes v]
   (let [out (ByteArrayOutputStream.)
-        key-size (ByteBuffer/allocate 4)
+        buf (ByteBuffer/allocate 4)
         kl (alength k)
-        vl (alength v)
-        value-size (ByteBuffer/allocate 4)]
-    (.write out (.array (.putInt key-size kl)))
+        vl (alength v)]
+    (.write out (.array (.putInt buf kl)))
     (.write out k)
-    (.write out (.array (.putInt value-size vl)))
+    (.clear buf)
+    (.write out (byte 1))
+    (.write out (.array (.putInt buf vl)))
     (.write out v)
+    (.clear buf)
+    (.toByteArray out)))
+
+(defn get-log-to-delete
+  "format will be: LENGTH:KEY:OP_TYPE"
+  [#^bytes k]
+  (let [out (ByteArrayOutputStream.)
+        buf (ByteBuffer/allocate 4)
+        kl (alength k)]
+    (.write out (.array (.putInt buf kl)))
+    (.write out k)
+    (.clear buf)
+    (.write out (byte 0))
     (.toByteArray out)))
 
 (defn write!
@@ -30,7 +44,7 @@
   [^String k ^String v ^ActiveSegment segment]
   (let [key (.getBytes k "UTF-8")
         val (.getBytes v "UTF-8")
-        barray (get-log-line key val)
+        barray (get-log-to-write key val)
         append-offset-length (alength barray)]
     ;update index
     ;update increment last offset
@@ -48,6 +62,19 @@
   ;append segment offset counter
   )
 
-
-(defn append! [segment])
+(defn delete!
+  "write to log with the delete marker"
+  [^String k ^ActiveSegment segment]
+  (let [barray (get-log-to-delete (.getBytes k "UTF-8"))
+        append-offset-length (alength barray)]
+    ;when deleting, now sure what to do with indexes here
+    ;append to file
+    ;update index
+    ;append segment offset counter
+    ;TODO atomic
+    (swap! (:index segment) assoc k @(:last-offset segment))
+    (swap! (:last-offset segment) + append-offset-length)
+    (.write (:write-chan segment) (nio/byte-buffer barray))
+    )
+  )
 
