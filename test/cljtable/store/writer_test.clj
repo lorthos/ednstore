@@ -54,10 +54,3 @@
     (is (= 0 (get @(:index @segment) "A")))
     (is (= 10 (get @(:index @segment) "AAAA")))
     ))
-
-(deftest read-from-segment
-  (testing "read key from segment file"
-    (write! "A" "B" @segment)                               ;offset 10
-    (write! "AAAA" "BBBB" @segment)                         ;offset 10+16
-    (is (nil? (rdr/read-direct "A" @segment)))))
-

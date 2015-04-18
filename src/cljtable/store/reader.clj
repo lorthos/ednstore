@@ -6,6 +6,7 @@
 (defn read-int-from-chan [^SeekableByteChannel chan]
   (let [buf (ByteBuffer/allocate 4)]
     (.read chan buf)
+    (.flip buf)
     (.getInt buf)))
 
 (defn read-str-from-chan [^SeekableByteChannel chan length]
@@ -14,19 +15,17 @@
     (String. (.array buf) "UTF-8")))
 
 (defn read-direct [^String key segment]
-  (println @(:index segment))
-  (println (get @(:index segment) key))
-  (let [offset (get @(:index segment) key)
+  (let [offset (get @(:index segment) key nil)
         chan (:read-chan segment)]
-    (.position ^SeekableByteChannel chan offset)
-    (let [kl (read-int-from-chan chan)
-          k (read-str-from-chan chan kl)
-          vl (read-int-from-chan chan)
-          v (read-str-from-chan chan vl)]
-      v
-      )
-    )
-  )
+    (if offset
+      (do
+        (.position ^SeekableByteChannel chan offset)
+        (let [kl (read-int-from-chan chan)
+              k (read-str-from-chan chan kl)
+              vl (read-int-from-chan chan)
+              v (read-str-from-chan chan vl)]
+          v))
+      nil)))
 
 
 (defn lookup
