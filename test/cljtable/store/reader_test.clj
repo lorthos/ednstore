@@ -16,8 +16,8 @@
 
 (deftest read-from-segment
   (testing "read key from segment file"
-    (wrt/write! "A" "B" @segment)                           ;offset 10
-    (wrt/write! "AAAA" "BBBB" @segment)                     ;offset 10+16
+    (wrt/write! "A" "B" @segment)
+    (wrt/write! "AAAA" "BBBB" @segment)
     (is (= "B" (read-direct "A" @segment)))
     (is (= "BBBB" (read-direct "AAAA" @segment))))
   (testing "read when key does not exist"

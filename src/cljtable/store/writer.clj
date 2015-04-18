@@ -1,7 +1,8 @@
 (ns cljtable.store.writer
   (:require [nio.core :as nio]
-            [clojure.java.io :as io]
-            [cljtable.store.segment])
+            [cljtable.store.common :refer :all]
+            [cljtable.store.segment]
+            [cljtable.store.common :as c])
   (:import (java.nio ByteBuffer)
            (java.io ByteArrayOutputStream)
            (cljtable.store.segment ActiveSegment))
@@ -18,7 +19,7 @@
     (.write out (.array (.putInt buf kl)))
     (.write out k)
     (.clear buf)
-    (.write out (byte 1))
+    (.write out (byte 41))
     (.write out (.array (.putInt buf vl)))
     (.write out v)
     (.clear buf)
@@ -33,7 +34,7 @@
     (.write out (.array (.putInt buf kl)))
     (.write out k)
     (.clear buf)
-    (.write out (byte 0))
+    (.write out (byte 42))
     (.toByteArray out)))
 
 (defn write!
@@ -41,9 +42,9 @@
   active segment looks like this:
   index last-offset read-chan write-chan
   "
-  [^String k ^String v ^ActiveSegment segment]
-  (let [key (.getBytes k "UTF-8")
-        val (.getBytes v "UTF-8")
+  [k v ^ActiveSegment segment]
+  (let [key (field->wire k)
+        val (field->wire v)
         barray (get-log-to-write key val)
         append-offset-length (alength barray)]
     ;update index
@@ -64,8 +65,8 @@
 
 (defn delete!
   "write to log with the delete marker"
-  [^String k ^ActiveSegment segment]
-  (let [barray (get-log-to-delete (.getBytes k "UTF-8"))
+  [k ^ActiveSegment segment]
+  (let [barray (get-log-to-delete (c/field->wire k))
         append-offset-length (alength barray)]
     ;when deleting, now sure what to do with indexes here
     ;append to file

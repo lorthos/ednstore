@@ -1,5 +1,6 @@
 (ns cljtable.store.reader
-  (:require [cljtable.store.segment :as s])
+  (:require [cljtable.store.segment :as s]
+            [cljtable.store.common :as c])
   (:import (java.nio.channels SeekableByteChannel)
            (java.nio ByteBuffer)))
 
@@ -9,10 +10,10 @@
     (.flip buf)
     (.getInt buf)))
 
-(defn read-str-from-chan [^SeekableByteChannel chan length]
+(defn read-nippy-from-chan [^SeekableByteChannel chan length]
   (let [buf (ByteBuffer/allocate length)]
     (.read chan buf)
-    (String. (.array buf) "UTF-8")))
+    (c/wire->field (.array buf))))
 
 (defn read-byte-from-chan [^SeekableByteChannel chan]
   (let [buf (ByteBuffer/allocate 1)]
@@ -23,18 +24,19 @@
 (defn read-direct
   "should only read values that are not deleted
   old indexes might still contain deleted-record's key"
-  [^String key segment]
-  (let [offset (get @(:index segment) key nil)
+  [read-key segment]
+  (let [offset (get @(:index segment) read-key nil)
         chan (:read-chan segment)]
     (if offset
       (do
         (.position ^SeekableByteChannel chan offset)
         (let [kl (read-int-from-chan chan)
-              k (read-str-from-chan chan kl)
+              k (read-nippy-from-chan chan kl)
+              ;TODO check read-key vs k here for safety
               op_type (read-byte-from-chan chan)]
-          (if-not (= (byte 0) op_type)
+          (if (= op_type (byte 41))
             (let [vl (read-int-from-chan chan)
-                  v (read-str-from-chan chan vl)]
+                  v (read-nippy-from-chan chan vl)]
               v))))
       nil)))
 

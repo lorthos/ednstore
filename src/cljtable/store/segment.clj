@@ -12,12 +12,12 @@
 ;maybe this is not a good idea
 ;can create top level atom for active index and write channels
 ;TODO
-(defrecord ActiveSegment [index last-offset ^SeekableByteChannel read-chan ^WritableByteChannel write-chan])
+(defrecord ActiveSegment [index last-offset ^WritableByteChannel write-chan ^SeekableByteChannel read-chan])
 (defrecord ReadOnlySegment [index ^SeekableByteChannel read-chan])
 
 (defn make-active-segment! [path]
   (let [file (io/file path)]
-    (ActiveSegment. (atom {}) (atom 0) (nio/readable-channel file) (nio/writable-channel file))))
+    (ActiveSegment. (atom {}) (atom 0) (nio/writable-channel file) (nio/readable-channel file))))
 
 (defn close-active-segment! [^ActiveSegment segment]
   (.close (:write-chan segment)))
@@ -42,17 +42,19 @@
   "
   [id]
   (let [segment-file (io/file (str id ".tbl"))
-        segment {:index      {}
-                 :write-chan (nio/writable-channel segment-file)
-                 :read-chan  (nio/readable-channel segment-file)}]
+        segment (make-active-segment! segment-file)]
     ;point to new active segment
 
-    (let [old-active @active-segment]
-      (reset! active-segment segment)
-      ;TODO close write channel of old-active
-      ;(.close (:write-chan old-active))
-      (swap! old-segments assoc (:id old-active) old-active)
-      )
+    (if @active-segment
+      (let [old-active @active-segment]
+        (println old-active)
+        (reset! active-segment segment)
+        (println old-active)
+        ;TODO close write channel of old-active
+        (.close (:write-chan old-active))
+        (swap! old-segments assoc (:id old-active) (ReadOnlySegment. (:index old-active) (:read-chan old-active)))
+        )
+      (reset! active-segment segment))
     )
   ;TODO
   )
