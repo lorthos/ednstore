@@ -41,37 +41,33 @@
   "write to the active segment only, should not write to an inactive segment
   active segment looks like this:
   index last-offset read-chan write-chan
+
+  1.update index
+  2.update increment last offset
+  3.write
   "
   [k v ^ActiveSegment segment]
   (let [key (field->wire k)
         val (field->wire v)
         barray (get-log-to-write key val)
         append-offset-length (alength barray)]
-    ;update index
-    ;update increment last offset
-    ;write
-    ;TODO atomic
+
+    ;TODO should be atomic
     (swap! (:index segment) assoc k @(:last-offset segment))
     (swap! (:last-offset segment) + append-offset-length)
     (.write (:write-chan segment) (nio/byte-buffer barray))
     ;(.flush (:write-chan segment))
     )
-  ;find the segments index
-  ;segments current offset will be the index value
-  ;append to file
-  ;update index
-  ;append segment offset counter
   )
 
 (defn delete!
-  "write to log with the delete marker"
+  "write to log with the delete marker
+  1.append to file
+  2.update index
+  3.append segment offset counter"
   [k ^ActiveSegment segment]
   (let [barray (get-log-to-delete (c/field->wire k))
         append-offset-length (alength barray)]
-    ;when deleting, now sure what to do with indexes here
-    ;append to file
-    ;update index
-    ;append segment offset counter
     ;TODO atomic
     (swap! (:index segment) assoc k @(:last-offset segment))
     (swap! (:last-offset segment) + append-offset-length)

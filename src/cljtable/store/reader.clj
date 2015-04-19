@@ -32,8 +32,9 @@
         (.position ^SeekableByteChannel chan offset)
         (let [kl (read-int-from-chan chan)
               k (read-nippy-from-chan chan kl)
-              ;TODO check read-key vs k here for safety
               op_type (read-byte-from-chan chan)]
+          (if-not (= k read-key)
+            (throw (RuntimeException. "segment key is different than index key, index is inconsistent")))
           (if (= op_type (byte 41))
             (let [vl (read-int-from-chan chan)
                   v (read-nippy-from-chan chan vl)]

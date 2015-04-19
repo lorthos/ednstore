@@ -6,6 +6,14 @@ Work in progress
 
 FIXME
 
+## TODO
+
+- property config
+- externalize serialization
+- segment merger
+- benchmark
+- sstable engine
+
 ## License
 
 Copyright © 2015 FIXME
