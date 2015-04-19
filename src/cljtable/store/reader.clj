@@ -41,15 +41,23 @@
               v))))
       nil)))
 
+(defn segment-has-key? [k segment]
+  (if-not (nil? (:index segment))
+    (let [index @(:index segment)]
+      (if index
+        (contains? index k)
+        false))))
 
-(defn lookup
+(defn read-all
   "search for the given key across all indexes of all segments"
-  [^String key]
-  (let [all-segments (cons @s/active-segment @s/old-segments)
-        target-segment (first (filter #(contains? % key) all-segments))]
-
+  [k]
+  (if (nil? @s/active-segment)
+    (throw (RuntimeException. "active segment is null!")))
+  (let [all-segments (cons @s/active-segment (vals @s/old-segments))
+        target-segment (first (filter #(segment-has-key? k %) all-segments))]
+    (println target-segment)
     (if target-segment
-      (read-direct key @target-segment)
+      (read-direct k target-segment)
       ;indices are in decreasing order
       ;first match is the latest value
       ;TODO

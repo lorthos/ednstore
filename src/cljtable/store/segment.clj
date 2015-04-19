@@ -2,7 +2,8 @@
   "all segment management is handled here,
   additional logic about merging should be handled here"
   (:require [clojure.java.io :as io]
-            [nio.core :as nio])
+            [nio.core :as nio]
+            [cljtable.env :as e])
   (:import (java.nio.channels WritableByteChannel SeekableByteChannel)))
 
 (def old-segments (atom {}))
@@ -12,12 +13,14 @@
 ;maybe this is not a good idea
 ;can create top level atom for active index and write channels
 ;TODO
-(defrecord ActiveSegment [index last-offset ^WritableByteChannel write-chan ^SeekableByteChannel read-chan])
-(defrecord ReadOnlySegment [index ^SeekableByteChannel read-chan])
+(defrecord ActiveSegment [id index last-offset ^WritableByteChannel write-chan ^SeekableByteChannel read-chan])
+(defrecord ReadOnlySegment [id index ^SeekableByteChannel read-chan])
 
-(defn make-active-segment! [path]
+(defn make-active-segment!
+  "make a new segment at the given path with the given id"
+  [id path]
   (let [file (io/file path)]
-    (ActiveSegment. (atom {}) (atom 0) (nio/writable-channel file) (nio/readable-channel file))))
+    (ActiveSegment. id (atom {}) (atom 0) (nio/writable-channel file) (nio/readable-channel file))))
 
 (defn close-active-segment! [^ActiveSegment segment]
   (.close (:write-chan segment)))
@@ -41,22 +44,24 @@
   4.move old active segment to old-segment list
   "
   [id]
-  (let [segment-file (io/file (str id ".tbl"))
-        segment (make-active-segment! segment-file)]
+  (let [root-path (:root-path e/props)
+        segment-file (io/file (str root-path id ".tbl"))
+        segment (make-active-segment! id segment-file)]
     ;point to new active segment
 
     (if @active-segment
-      (let [old-active @active-segment]
+      (let [old-active @active-segment
+            old-id (:id old-active)]
         (println old-active)
         (reset! active-segment segment)
         (println old-active)
         ;TODO close write channel of old-active
         (.close (:write-chan old-active))
-        (swap! old-segments assoc (:id old-active) (ReadOnlySegment. (:index old-active) (:read-chan old-active)))
+        (swap! old-segments assoc old-id (ReadOnlySegment. old-id (:index old-active) (:read-chan old-active)))
         )
       (reset! active-segment segment))
     )
-  ;TODO
+  @active-segment
   )
 
 (defn merge-segments!

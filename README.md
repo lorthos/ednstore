@@ -2,13 +2,18 @@
 
 Work in progress
 
+Simple embeddable key value store for Clojure, similar to bitcask & leveldb
+
+
 ## Usage
 
 FIXME
 
 ## TODO
 
-- property config
+- read all segments
+- user api
+- performance & validation test
 - externalize serialization
 - segment merger
 - benchmark

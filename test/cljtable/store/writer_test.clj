@@ -6,7 +6,7 @@
 (def segment (atom nil))
 
 (defn segment-fixture [f]
-  (reset! segment (seg/make-active-segment! "test.tbl"))
+  (reset! segment (seg/make-active-segment! 33 "33.tbl"))
   (f)
   (seg/close-active-segment! @segment))
 

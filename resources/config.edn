@@ -1,4 +1,5 @@
 {
  :engine :plain
- :engine :sstable
+ ;:engine :sstable
+ :root-path   "target/segments/"
  }
