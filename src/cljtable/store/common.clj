@@ -1,6 +1,7 @@
 (ns cljtable.store.common
-  (:require [taoensso.nippy :as nippy])
-  (:import (java.util.concurrent Executor)))
+  (:require [taoensso.nippy :as nippy]
+            [clojure.java.io :as io]
+            [cljtable.env :as e]))
 
 
 (defn field->wire
@@ -18,3 +19,10 @@
   `(.get (.submit ~executor (proxy [Callable] []
                               (call []
                                 (do ~@body))))))
+
+
+(defn get-segment-file
+  "based on the segment id and configured folder, get the full file"
+  [id]
+  (let [root-path (:root-path e/props)]
+    (io/file (str root-path id ".tbl"))))

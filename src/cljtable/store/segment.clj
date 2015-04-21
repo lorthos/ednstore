@@ -3,7 +3,7 @@
   additional logic about merging should be handled here"
   (:require [clojure.java.io :as io]
             [nio.core :as nio]
-            [cljtable.env :as e])
+            [cljtable.store.common :as c])
   (:import (java.nio.channels WritableByteChannel SeekableByteChannel)))
 
 (def old-segments (atom {}))
@@ -18,8 +18,8 @@
 
 (defn make-active-segment!
   "make a new segment at the given path with the given id"
-  [id path]
-  (let [file (io/file path)]
+  [id]
+  (let [file (c/get-segment-file id)]
     (ActiveSegment. id (atom {}) (atom 0) (nio/writable-channel file) (nio/readable-channel file))))
 
 (defn close-active-segment! [^ActiveSegment segment]
@@ -44,9 +44,7 @@
   4.move old active segment to old-segment list
   "
   [id]
-  (let [root-path (:root-path e/props)
-        segment-file (io/file (str root-path id ".tbl"))
-        segment (make-active-segment! id segment-file)]
+  (let [segment (make-active-segment! id)]
     ;point to new active segment
 
     (if @active-segment

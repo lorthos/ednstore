@@ -20,5 +20,8 @@
     (is (= :b (lookup :a)))
     (insert! :a {:b "c"})
     (is (= {:b "c"} (lookup :a)))
+    (is (= "B" (lookup "A")))
+    (delete! "A")
+    (is (nil? (lookup "A")))
     )
   )

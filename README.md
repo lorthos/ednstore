@@ -11,8 +11,7 @@ FIXME
 
 ## TODO
 
-- user api
-- writer threading
+- user api; initialize; load segments from disk and reconstruct indices
 - performance & validation test
 - externalize serialization
 - segment merger
