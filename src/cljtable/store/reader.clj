@@ -55,7 +55,6 @@
     (throw (RuntimeException. "active segment is null!")))
   (let [all-segments (cons @s/active-segment (vals @s/old-segments))
         target-segment (first (filter #(segment-has-key? k %) all-segments))]
-    (println target-segment)
     (if target-segment
       (read-direct k target-segment)
       ;indices are in decreasing order

@@ -11,6 +11,7 @@ FIXME
 
 ## TODO
 
+- loading test
 - user api; initialize; load segments from disk and reconstruct indices
 - performance & validation test
 - externalize serialization

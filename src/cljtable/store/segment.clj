@@ -18,19 +18,15 @@
 
 (defn make-active-segment!
   "make a new segment at the given path with the given id"
-  [id]
-  (let [file (c/get-segment-file id)]
-    (ActiveSegment. id (atom {}) (atom 0) (nio/writable-channel file) (nio/readable-channel file))))
+  ([id]
+   (let [file (c/get-segment-file id)]
+     (ActiveSegment. id (atom {}) (atom 0) (nio/writable-channel file) (nio/readable-channel file))))
+  ([id file index offset read-chan]
+   (ActiveSegment. id (atom index) (atom offset) (nio/writable-channel file) read-chan))
+  )
 
 (defn close-active-segment! [^ActiveSegment segment]
   (.close (:write-chan segment)))
-
-(defn load-segments!
-  "load segments from folder - make newest the active segment.
-  should set old-segments and active-segment if possible"
-  [path]
-  ;TODO
-  )
 
 (defn roll-new-segment!
   "roll a new segment on the filesystem,
@@ -46,13 +42,10 @@
   [id]
   (let [segment (make-active-segment! id)]
     ;point to new active segment
-
     (if @active-segment
       (let [old-active @active-segment
             old-id (:id old-active)]
-        (println old-active)
         (reset! active-segment segment)
-        (println old-active)
         ;TODO close write channel of old-active
         (.close (:write-chan old-active))
         (swap! old-segments assoc old-id (ReadOnlySegment. old-id (:index old-active) (:read-chan old-active)))

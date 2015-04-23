@@ -1,6 +1,10 @@
 (ns cljtable.store.loader
-  (:require [cljtable.store.reader :as r])
-  (:import (java.nio.channels SeekableByteChannel)))
+  (:require [cljtable.store.reader :as r]
+            [cljtable.store.common :as c]
+            [cljtable.store.segment :as s]
+            [nio.core :as nio])
+  (:import (java.nio.channels SeekableByteChannel)
+           (cljtable.store.segment ReadOnlySegment)))
 
 (defn read-next-key-and-offset-and-increment!
   "given a channel that is at the end position of a record (or at the beginning of the file)
@@ -44,15 +48,22 @@
         index (atom {})]
     (loop [current 0]
       (if (= current end)
-        @index
-        (recur (append-next-line-to-index! index (read-next-key-and-offset-and-increment! chan offset-atom)))
-        )
-      )
-    )
-  )
+        {:index @index :offset @offset-atom}
+        (recur (append-next-line-to-index! index (read-next-key-and-offset-and-increment! chan offset-atom)))))))
 
-(loop [i 5 acc 1]
-  (println i acc)
-  (if (zero? i)
-    acc
-    (recur (dec i) (* acc i))))
+
+(defn load-active-segment
+  "given the segment id, load it as the active segment"
+  [id]
+  (let [segment-file (c/get-segment-file id)
+        read-chan (nio/readable-channel segment-file)
+        loaded (load-index read-chan)]
+    (s/make-active-segment! id segment-file (:index loaded) (:offset loaded) read-chan)))
+
+(defn load-read-only-segment
+  "given the segment id, load it as a read only segment"
+  [id]
+  (let [segment-file (c/get-segment-file id)
+        read-chan (nio/readable-channel segment-file)
+        loaded (load-index read-chan)]
+    (ReadOnlySegment. id (atom (:index loaded)) read-chan)))
