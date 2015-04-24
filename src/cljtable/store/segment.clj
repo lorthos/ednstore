@@ -16,6 +16,9 @@
 (defrecord ActiveSegment [id index last-offset ^WritableByteChannel write-chan ^SeekableByteChannel read-chan])
 (defrecord ReadOnlySegment [id index ^SeekableByteChannel read-chan])
 
+(defn get-all-segments []
+  (cons @active-segment (vals @old-segments)))
+
 (defn make-active-segment!
   "make a new segment at the given path with the given id"
   ([id]
@@ -25,8 +28,12 @@
    (ActiveSegment. id (atom index) (atom offset) (nio/writable-channel file) read-chan))
   )
 
-(defn close-active-segment! [^ActiveSegment segment]
-  (.close (:write-chan segment)))
+
+(defn close-segment-fully! [segment]
+  (println "CLOSING " segment)
+  (if (:write-chan segment)
+    (.close (:write-chan segment)))
+  (.close (:read-chan segment)))
 
 (defn roll-new-segment!
   "roll a new segment on the filesystem,
@@ -45,8 +52,9 @@
     (if @active-segment
       (let [old-active @active-segment
             old-id (:id old-active)]
+        (println "OLD ACTIVE " old-active)
+        (println "NEW ACTIVE " segment)
         (reset! active-segment segment)
-        ;TODO close write channel of old-active
         (.close (:write-chan old-active))
         (swap! old-segments assoc old-id (ReadOnlySegment. old-id (:index old-active) (:read-chan old-active)))
         )

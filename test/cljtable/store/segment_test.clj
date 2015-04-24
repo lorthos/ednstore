@@ -8,7 +8,8 @@
   (reset! active-segment nil)
   (reset! old-segments {})
   (f)
-  (close-active-segment! @active-segment))
+  (close-segment-fully! @active-segment)
+  (reset! active-segment nil))
 
 (use-fixtures :each segment-fixture)
 

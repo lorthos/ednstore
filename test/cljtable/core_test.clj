@@ -1,13 +1,15 @@
 (ns cljtable.core-test
   (:require [clojure.test :refer :all]
             [cljtable.core :refer :all]
-            [cljtable.store.segment :as s]))
+            [cljtable.store.segment :as s]
+            [cljtable.store.reader :as r]))
 
 
 (defn segment-fixture [f]
   (s/roll-new-segment! 0)
   (f)
-  (s/close-active-segment! @s/active-segment))
+  (s/close-segment-fully! @s/active-segment)
+  (reset! s/active-segment nil))
 
 (use-fixtures :each segment-fixture)
 
@@ -34,6 +36,7 @@
     (insert! "a0" "b0")
     (insert! "a00" "b00")
     (insert! "a000" "b000")
+    (insert! "a0000" "b0000")
     (s/roll-new-segment! 1)
     (insert! "a1" "b1")
     (insert! "a11" "b11")
@@ -42,16 +45,20 @@
     (insert! "a2" "b2")
     (insert! "a22" "b22")
     (insert! "a222" "b222")
-    (reset! s/active-segment (atom nil))
-    (reset! s/old-segments (atom {}))
+    ;(s/roll-new-segment! 3)
+    (stop!)
     (initialize! {})
+    ;test previous segments
     (is (= "b0" (lookup "a0")))
     (is (= "b00" (lookup "a00")))
     (is (= "b000" (lookup "a000")))
     (is (= "b1" (lookup "a1")))
     (is (= "b11" (lookup "a11")))
     (is (= "b111" (lookup "a111")))
+    ;test the active segment
     (is (= "b2" (lookup "a2")))
+    (is (= "b22" (lookup "a22")))
+    (is (= "b2" (r/read-direct "a2" @s/active-segment)))
 
     )
   )

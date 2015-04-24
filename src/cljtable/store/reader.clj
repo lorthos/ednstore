@@ -26,10 +26,10 @@
   old indexes might still contain deleted-record's key"
   [read-key segment]
   (let [offset (get @(:index segment) read-key nil)
-        chan (:read-chan segment)]
+        chan ^SeekableByteChannel (:read-chan segment)]
     (if offset
       (do
-        (.position ^SeekableByteChannel chan offset)
+        (.position chan offset)
         (let [kl (read-int-from-chan chan)
               k (read-nippy-from-chan chan kl)
               op_type (read-byte-from-chan chan)]
@@ -53,14 +53,16 @@
   [k]
   (if (nil? @s/active-segment)
     (throw (RuntimeException. "active segment is null!")))
-  (let [all-segments (cons @s/active-segment (vals @s/old-segments))
+  (let [all-segments (s/get-all-segments)
         target-segment (first (filter #(segment-has-key? k %) all-segments))]
     (if target-segment
       (read-direct k target-segment)
       ;indices are in decreasing order
       ;first match is the latest value
       ;TODO
-      )
-    ))
+      )))
+
+
+
 
 

@@ -8,7 +8,8 @@
 (defn segment-fixture [f]
   (reset! segment (seg/make-active-segment! 33))
   (f)
-  (seg/close-active-segment! @segment))
+  (seg/close-segment-fully! @segment)
+  (reset! seg/active-segment nil))
 
 (use-fixtures :each segment-fixture)
 

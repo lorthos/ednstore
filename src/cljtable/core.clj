@@ -7,7 +7,8 @@
             [cljtable.env :as e]
             [nio.core :as nio])
   (:import (java.util.concurrent Executors)
-           (java.io File)))
+           (java.io File)
+           (java.nio.channels WritableByteChannel ReadableByteChannel)))
 
 (def exec (Executors/newSingleThreadExecutor))
 
@@ -23,6 +24,7 @@
   ;check storage
   ;init readonnly segments and active segments if possible"
   [config]
+  ;TODO check for clean init
   (let [segment-ids (->> (:root-path e/props)
                          clojure.java.io/file
                          file-seq
@@ -50,8 +52,14 @@
 (defn stop!
   "close all open file handles"
   []
-  ;TODO
-  )
+  (let [seg @s/active-segment]
+    ; (reset! s/active-segment nil)
+    (s/close-segment-fully! seg))
+  (dorun (map #(.close ^ReadableByteChannel (:read-chan %)) (s/get-all-segments)))
+  (reset! s/active-segment (atom nil))
+  (reset! s/old-segments (atom {})))
+
+
 
 (defn insert!
   "should always be single threaded"
