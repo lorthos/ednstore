@@ -33,11 +33,8 @@
                          (remove #(.isDirectory ^File %))
                          reverse
                          (map (comp read-string #(.substring % 0 (.lastIndexOf % ".")) #(.getName ^File %))))]
-    (println segment-ids)
     (let [active-segment (s/roll-new-segment! (inc (first segment-ids)))
           read-segments (zipmap segment-ids (doall (map ldr/load-read-only-segment segment-ids)))]
-      (println active-segment)
-      (println read-segments)
       ;TODO shut down existing stuff first or check?
       (reset! s/active-segment active-segment)
       (reset! s/old-segments read-segments)))

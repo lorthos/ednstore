@@ -48,12 +48,9 @@
     (if @active-segment
       (let [old-active @active-segment
             old-id (:id old-active)]
-        (println "OLD ACTIVE " old-active)
-        (println "NEW ACTIVE " segment)
         (reset! active-segment segment)
         (if old-active
           (do
-            (println "OLD-ACTIVE" old-active)
             (.close (:wc old-active))
             (swap! old-segments assoc old-id (ReadOnlySegment. old-id (:index old-active) (:rc old-active)))))
         )
