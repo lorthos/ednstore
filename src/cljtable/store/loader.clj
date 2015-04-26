@@ -51,19 +51,10 @@
         {:index @index :offset @offset-atom}
         (recur (append-next-line-to-index! index (read-next-key-and-offset-and-increment! chan offset-atom)))))))
 
-
-(defn load-active-segment
-  "given the segment id, load it as the active segment"
-  [id]
-  (let [segment-file (c/get-segment-file id)
-        read-chan (nio/readable-channel segment-file)
-        loaded (load-index read-chan)]
-    (s/make-active-segment! id segment-file (:index loaded) (:offset loaded) read-chan)))
-
 (defn load-read-only-segment
   "given the segment id, load it as a read only segment"
   [id]
-  (let [segment-file (c/get-segment-file id)
+  (let [segment-file (c/get-segment-file! id)
         read-chan (nio/readable-channel segment-file)
         loaded (load-index read-chan)]
     (ReadOnlySegment. id (atom (:index loaded)) read-chan)))

@@ -47,7 +47,8 @@
     (insert! "a222" "b222")
     ;(s/roll-new-segment! 3)
     (stop!)
-    (initialize! {})
+    (println "STOPPED")
+    (initialize!)
     ;test previous segments
     (is (= "b0" (lookup "a0")))
     (is (= "b00" (lookup "a00")))
@@ -58,7 +59,9 @@
     ;test the active segment
     (is (= "b2" (lookup "a2")))
     (is (= "b22" (lookup "a22")))
-    (is (= "b2" (r/read-direct "a2" @s/active-segment)))
+    (is (nil? (r/read-direct "a2" @s/active-segment)))
+    (println "ACTIVE" @s/active-segment)
+    (println "OLD" @s/old-segments)
 
     )
   )

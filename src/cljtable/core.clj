@@ -5,7 +5,8 @@
             [cljtable.store.segment :as s]
             [cljtable.store.loader :as ldr]
             [cljtable.env :as e]
-            [nio.core :as nio])
+            [nio.core :as nio]
+            [clojure.java.io :as io])
   (:import (java.util.concurrent Executors)
            (java.io File)
            (java.nio.channels WritableByteChannel ReadableByteChannel)))
@@ -23,23 +24,23 @@
   "initialize the store with the given config
   ;check storage
   ;init readonnly segments and active segments if possible"
-  [config]
+  []
+  (.mkdir (io/file (:path e/props)))
   ;TODO check for clean init
-  (let [segment-ids (->> (:root-path e/props)
+  (let [segment-ids (->> (:path e/props)
                          clojure.java.io/file
                          file-seq
                          (remove #(.isDirectory ^File %))
                          reverse
-                         (map (comp read-string #(.substring % 0 (.lastIndexOf % ".")) #(.getName ^File %))))
-        active-segment (ldr/load-active-segment (first segment-ids))
-        read-segments (zipmap (rest segment-ids) (doall (map ldr/load-read-only-segment (rest segment-ids))))]
+                         (map (comp read-string #(.substring % 0 (.lastIndexOf % ".")) #(.getName ^File %))))]
     (println segment-ids)
-    (println active-segment)
-    (println read-segments)
-    ;TODO shut down existing stuff first or check?
-    (reset! s/active-segment active-segment)
-    (reset! s/old-segments read-segments)
-    )
+    (let [active-segment (s/roll-new-segment! (inc (first segment-ids)))
+          read-segments (zipmap segment-ids (doall (map ldr/load-read-only-segment segment-ids)))]
+      (println active-segment)
+      (println read-segments)
+      ;TODO shut down existing stuff first or check?
+      (reset! s/active-segment active-segment)
+      (reset! s/old-segments read-segments)))
   ;TODO
   ;go to config folder
   ;get the list of segments
@@ -52,12 +53,9 @@
 (defn stop!
   "close all open file handles"
   []
-  (let [seg @s/active-segment]
-    ; (reset! s/active-segment nil)
-    (s/close-segment-fully! seg))
-  (dorun (map #(.close ^ReadableByteChannel (:read-chan %)) (s/get-all-segments)))
-  (reset! s/active-segment (atom nil))
-  (reset! s/old-segments (atom {})))
+  (dorun (map s/close-segment-fully! (s/get-all-segments)))
+  (reset! s/active-segment nil)
+  (reset! s/old-segments {}))
 
 
 

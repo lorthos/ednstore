@@ -6,7 +6,7 @@
 (def segment (atom nil))
 
 (defn segment-fixture [f]
-  (reset! segment (seg/make-active-segment! 33))
+  (reset! segment (seg/roll-new-segment! 33))
   (f)
   (seg/close-segment-fully! @segment)
   (reset! seg/active-segment nil))

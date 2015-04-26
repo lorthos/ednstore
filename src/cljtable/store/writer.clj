@@ -55,8 +55,8 @@
     ;TODO should be atomic
     (swap! (:index segment) assoc k @(:last-offset segment))
     (swap! (:last-offset segment) + append-offset-length)
-    (.write (:write-chan segment) (nio/byte-buffer barray))
-    ;(.flush (:write-chan segment))
+    (.write (:wc segment) (nio/byte-buffer barray))
+    ;(.flush (:wc segment))
     )
   )
 
@@ -71,7 +71,7 @@
     ;TODO atomic
     (swap! (:index segment) assoc k @(:last-offset segment))
     (swap! (:last-offset segment) + append-offset-length)
-    (.write (:write-chan segment) (nio/byte-buffer barray))
+    (.write (:wc segment) (nio/byte-buffer barray))
     )
   )
 

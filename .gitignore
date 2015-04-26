@@ -11,3 +11,4 @@ pom.xml.asc
 *.jpr
 *.iml
 *.log
+data/

@@ -6,34 +6,30 @@
             [cljtable.store.common :as c])
   (:import (java.nio.channels WritableByteChannel SeekableByteChannel)))
 
-(def old-segments (atom {}))
+(defonce old-segments (atom {}))
 
-(def active-segment (atom nil))
+(defonce active-segment (atom nil))
 
 ;maybe this is not a good idea
 ;can create top level atom for active index and write channels
 ;TODO
-(defrecord ActiveSegment [id index last-offset ^WritableByteChannel write-chan ^SeekableByteChannel read-chan])
-(defrecord ReadOnlySegment [id index ^SeekableByteChannel read-chan])
+(defrecord ActiveSegment [id index last-offset ^WritableByteChannel wc ^SeekableByteChannel rc])
+(defrecord ReadOnlySegment [id index ^SeekableByteChannel rc])
 
 (defn get-all-segments []
   (cons @active-segment (vals @old-segments)))
 
-(defn make-active-segment!
+(defn make-new-segment!
   "make a new segment at the given path with the given id"
-  ([id]
-   (let [file (c/get-segment-file id)]
-     (ActiveSegment. id (atom {}) (atom 0) (nio/writable-channel file) (nio/readable-channel file))))
-  ([id file index offset read-chan]
-   (ActiveSegment. id (atom index) (atom offset) (nio/writable-channel file) read-chan))
-  )
-
+  [id]
+  (let [file (c/get-segment-file! id)]
+    (ActiveSegment. id (atom {}) (atom 0) (nio/writable-channel file) (nio/readable-channel file))))
 
 (defn close-segment-fully! [segment]
   (println "CLOSING " segment)
-  (if (:write-chan segment)
-    (.close (:write-chan segment)))
-  (.close (:read-chan segment)))
+  (if (:wc segment)
+    (.close (:wc segment)))
+  (.close (:rc segment)))
 
 (defn roll-new-segment!
   "roll a new segment on the filesystem,
@@ -47,7 +43,7 @@
   4.move old active segment to old-segment list
   "
   [id]
-  (let [segment (make-active-segment! id)]
+  (let [segment (make-new-segment! id)]
     ;point to new active segment
     (if @active-segment
       (let [old-active @active-segment
@@ -55,8 +51,11 @@
         (println "OLD ACTIVE " old-active)
         (println "NEW ACTIVE " segment)
         (reset! active-segment segment)
-        (.close (:write-chan old-active))
-        (swap! old-segments assoc old-id (ReadOnlySegment. old-id (:index old-active) (:read-chan old-active)))
+        (if old-active
+          (do
+            (println "OLD-ACTIVE" old-active)
+            (.close (:wc old-active))
+            (swap! old-segments assoc old-id (ReadOnlySegment. old-id (:index old-active) (:rc old-active)))))
         )
       (reset! active-segment segment))
     )

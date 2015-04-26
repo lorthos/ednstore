@@ -21,8 +21,10 @@
                                 (do ~@body))))))
 
 
-(defn get-segment-file
+(defn get-segment-file!
   "based on the segment id and configured folder, get the full file"
   [id]
-  (let [root-path (:root-path e/props)]
-    (io/file (str root-path id ".tbl"))))
+  (let [root-path (:path e/props)
+        file (io/file (str root-path id ".tbl"))]
+    (io/make-parents file)
+    file))

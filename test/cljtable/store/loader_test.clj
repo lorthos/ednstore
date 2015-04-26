@@ -37,20 +37,20 @@
     (wrt/write! "C" "D" @s/active-segment)
 
     (is (= {:index {"A" 0 "B" 33 "C" 66} :offset 99}
-           (load-index (:read-chan @s/active-segment))))
+           (load-index (:rc @s/active-segment))))
     (wrt/write! "DD" "EE" @s/active-segment)
     (wrt/write! "E" "F" @s/active-segment)
 
     (is (= {:index {"A" 0 "B" 33 "C" 66 "DD" 99 "E" 134} :offset 167}
-           (load-index (:read-chan @s/active-segment))))
+           (load-index (:rc @s/active-segment))))
     (wrt/delete! "E" @s/active-segment)
 
     (is (= {:index {"A" 0 "B" 33 "C" 66 "DD" 99 "E" 167} :offset 184}
-           (load-index (:read-chan @s/active-segment))))
+           (load-index (:rc @s/active-segment))))
 
     (wrt/delete! "DD" @s/active-segment)
     (is (= {:index {"A" 0 "B" 33 "C" 66 "DD" 184 "E" 167} :offset 202}
-           (load-index (:read-chan @s/active-segment))))
+           (load-index (:rc @s/active-segment))))
 
     )
   )

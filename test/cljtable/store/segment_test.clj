@@ -26,8 +26,11 @@
     (is (= "B" (r/read-direct "A" @active-segment)))
     (roll-new-segment! 1)
     (is (nil? (r/read-direct "A" @active-segment)))
-    (w/write! "A" "B" @active-segment)
-    (is (= "B" (r/read-direct "A" @active-segment)))
-    (println @active-segment)
-    (println @old-segments)
+    (w/write! "AA" "BB" @active-segment)
+    (is (= "BB" (r/read-direct "AA" @active-segment)))
+    (println "ACTIVE" @active-segment)
+    (println "OLD" @old-segments)
     ))
+
+
+
