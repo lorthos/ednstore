@@ -8,8 +8,7 @@
             [nio.core :as nio]
             [clojure.java.io :as io])
   (:import (java.util.concurrent Executors)
-           (java.io File)
-           (java.nio.channels WritableByteChannel ReadableByteChannel)))
+           (java.io File)))
 
 (def exec (Executors/newSingleThreadExecutor))
 
@@ -33,18 +32,16 @@
                          (remove #(.isDirectory ^File %))
                          reverse
                          (map (comp read-string #(.substring % 0 (.lastIndexOf % ".")) #(.getName ^File %))))]
-    (let [active-segment (s/roll-new-segment! (inc (first segment-ids)))
-          read-segments (zipmap segment-ids (doall (map ldr/load-read-only-segment segment-ids)))]
-      ;TODO shut down existing stuff first or check?
-      (reset! s/active-segment active-segment)
-      (reset! s/old-segments read-segments)))
-  ;TODO
-  ;go to config folder
-  ;get the list of segments
-  ;make newest active
-  ;make olders read only
-  ;
-
+    (if-not (empty? segment-ids)
+     (let [active-segment (s/roll-new-segment! (inc (first segment-ids)))
+           read-segments (zipmap segment-ids (doall (map ldr/load-read-only-segment segment-ids)))]
+       ;TODO shut down existing stuff first or check?
+       (reset! s/active-segment active-segment)
+       (reset! s/old-segments read-segments))
+     (let [active-segment (s/roll-new-segment! 0)]
+       (reset! s/active-segment active-segment))
+     )
+    )
   )
 
 (defn stop!

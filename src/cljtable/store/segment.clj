@@ -26,7 +26,6 @@
     (ActiveSegment. id (atom {}) (atom 0) (nio/writable-channel file) (nio/readable-channel file))))
 
 (defn close-segment-fully! [segment]
-  (println "CLOSING " segment)
   (if (:wc segment)
     (.close (:wc segment)))
   (.close (:rc segment)))
