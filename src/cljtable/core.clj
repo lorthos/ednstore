@@ -12,17 +12,13 @@
 
 (def exec (Executors/newSingleThreadExecutor))
 
-(defn load-segments!
-  "load segments from folder - make newest the active segment.
-  should set old-segments and active-segment if possible"
-  [path]
-  ;TODO
-  )
-
 (defn initialize!
   "initialize the store with the given config
   ;check storage
-  ;init readonnly segments and active segments if possible"
+
+  load segments from folder - make newest the active segment.
+  should set old-segments and active-segment if possible
+  "
   []
   (.mkdir (io/file (:path e/props)))
   ;TODO check for clean init
@@ -38,7 +34,7 @@
        ;TODO shut down existing stuff first or check?
        (reset! s/active-segment active-segment)
        (reset! s/old-segments read-segments))
-     (let [active-segment (s/roll-new-segment! 0)]
+     (let [active-segment (s/roll-new-segment! 1000)]
        (reset! s/active-segment active-segment))
      )
     )
