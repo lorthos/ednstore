@@ -16,7 +16,6 @@ FIXME
 - externalize serialization
 - segment merger
 - benchmark
-- sstable engine
 
 ## License
 
