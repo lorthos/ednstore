@@ -10,14 +10,17 @@
   (:import (java.util.concurrent Executors)
            (java.io File)))
 
-(def exec (Executors/newSingleThreadExecutor))
+(def exec
+  "Main write thread, all writes are sequential at this time"
+  (Executors/newSingleThreadExecutor))
 
 (defn initialize!
   "initialize the store with the given config
-  ;check storage
 
   load segments from folder - make newest the active segment.
   should set old-segments and active-segment if possible
+
+  TODO: validate state before initializing
   "
   []
   (.mkdir (io/file (:path e/props)))

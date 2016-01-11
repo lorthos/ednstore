@@ -63,5 +63,5 @@
   cleaned up union of both
   update old-segments collection to point to newly merged segment and remove the old ones"
   [^ReadOnlySegment seg1 ^ReadOnlySegment seg2]
-  ;TODO
+  ;TODO merger implementation
   )

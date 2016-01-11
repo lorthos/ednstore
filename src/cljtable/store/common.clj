@@ -1,4 +1,6 @@
 (ns cljtable.store.common
+  "common utilities
+  TODO: move serialization out of here"
   (:require [taoensso.nippy :as nippy]
             [clojure.java.io :as io]
             [cljtable.env :as e]))

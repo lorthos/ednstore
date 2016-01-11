@@ -1,3 +1,15 @@
 # Introduction to cljtable
-
-TODO: write [great documentation](http://jacobian.org/writing/what-to-write/)
+- Writes Are sequential and single threaded
+- All writes are done against an active segment
+- Active segment is finalized after some predicate holds true
+- There is one Active Segment and zero or more Read Only segments at a given time
+- All segment have in memory key-offset indexes
+- During writes, indexes are maintained
+- After restart, indexes are re-created in memory
+- Uses Nio for writes
+- Uses nippy for serializatioon
+-- TODO make pluggable
+- Uses Disk for writes
+-- TODO make pluggable, support offheap
+- deletes are marked with tombstones, should be cleaned up when merging
+-- TODO merge read-only segments on background
