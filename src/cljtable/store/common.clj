@@ -17,7 +17,9 @@
   [^bytes wire-formatted]
   (nippy/thaw wire-formatted))
 
-(defmacro do-sequential [executor & body]
+(defmacro do-sequential
+  "submit the expression to the sequential executor"
+  [executor & body]
   `(.get (.submit ~executor (proxy [Callable] []
                               (call []
                                 (do ~@body))))))
