@@ -1,23 +1,29 @@
 (ns cljtable.load-test
   (:require [clojure.test :refer :all]
-            [cljtable.core :refer :all]))
+            [cljtable.common :refer :all]
+            [cljtable.core :refer :all]
+            [cljtable.env :as e])
+  (:import (cljtable.core SimpleDiskStore)))
+
+(def S (atom nil))
 
 (defn segment-fixture [f]
-  (initialize!)
+  (reset! S (SimpleDiskStore.))
+  (initialize! @S e/props)
   (f)
-  (stop!))
+  (stop! @S))
 
 (use-fixtures :each segment-fixture)
 
 
 (deftest load-test
   (testing "load-100k-items"
-    (doseq [x (range 100000)]
+    (doseq [x (range 1000)]
       (let [v (str x (java.util.UUID/randomUUID))]
-        (insert! x v)
+        (insert! @S x v)
         )
       )
-    (is (string? (lookup 42)))
+    (is (string? (lookup @S 42)))
     )
   )
 
