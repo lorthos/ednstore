@@ -2,7 +2,8 @@
   (:require [cljtable.store.reader :as r]
             [cljtable.store.common :as c]
             [cljtable.store.segment :as s]
-            [nio.core :as nio])
+            [nio.core :as nio]
+            [cljtable.io.core :as io])
   (:import (java.nio.channels SeekableByteChannel)
            (cljtable.store.segment ReadOnlySegment)))
 
@@ -17,12 +18,12 @@
   [chan offset-atom]
   ;TODO skip instead of read?
   (let [old-offset @offset-atom
-        kl (r/read-int-from-chan chan)
-        k (r/read-nippy-from-chan chan kl)
-        op_type (r/read-byte-from-chan chan)]
+        kl (io/read-int-from-chan chan)
+        k (io/read-nippy-from-chan chan kl)
+        op_type (io/read-byte-from-chan chan)]
     (if (= op_type (byte 41))
-      (let [vl (r/read-int-from-chan chan)
-            v (r/read-nippy-from-chan chan vl)]
+      (let [vl (io/read-int-from-chan chan)
+            v (io/read-nippy-from-chan chan vl)]
         (do
           (swap! offset-atom + 4 kl 1 4 vl)
           {:key k :old-offset old-offset :new-offset @offset-atom}))

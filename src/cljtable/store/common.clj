@@ -1,21 +1,8 @@
 (ns cljtable.store.common
-  "common utilities
-  TODO: move serialization out of here"
-  (:require [taoensso.nippy :as nippy]
-            [clojure.java.io :as io]
-            [cljtable.env :as e]))
-
-
-(defn field->wire
-  "converts the given key or value to byte-array"
-  [key-or-value]
-  (nippy/freeze key-or-value))
-
-
-(defn wire->field
-  "converts the given key or value to byte-array"
-  [^bytes wire-formatted]
-  (nippy/thaw wire-formatted))
+  "common utilities"
+  (:require
+    [clojure.java.io :as io]
+    [cljtable.env :as e]))
 
 (defmacro do-sequential
   "submit the expression to the sequential executor"

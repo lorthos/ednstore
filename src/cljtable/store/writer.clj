@@ -2,7 +2,8 @@
   (:require [nio.core :as nio]
             [cljtable.store.common :refer :all]
             [cljtable.store.segment]
-            [cljtable.store.common :as c])
+            [cljtable.store.common :as c]
+            [cljtable.serialization.core :as ser])
   (:import (java.nio ByteBuffer)
            (java.io ByteArrayOutputStream)
            (cljtable.store.segment ActiveSegment))
@@ -47,8 +48,8 @@
   3.write
   "
   [k v ^ActiveSegment segment]
-  (let [key (field->wire k)
-        val (field->wire v)
+  (let [key (ser/field->wire k)
+        val (ser/field->wire v)
         barray (get-log-to-write key val)
         append-offset-length (alength barray)]
 
@@ -66,7 +67,7 @@
   2.update index
   3.append segment offset counter"
   [k ^ActiveSegment segment]
-  (let [barray (get-log-to-delete (c/field->wire k))
+  (let [barray (get-log-to-delete (ser/field->wire k))
         append-offset-length (alength barray)]
     ;TODO atomic
     (swap! (:index segment) assoc k @(:last-offset segment))

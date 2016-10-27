@@ -1,25 +1,7 @@
 (ns cljtable.store.reader
   (:require [cljtable.store.segment :as s]
-            [cljtable.store.common :as c])
-  (:import (java.nio.channels SeekableByteChannel)
-           (java.nio ByteBuffer)))
-
-(defn read-int-from-chan [^SeekableByteChannel chan]
-  (let [buf (ByteBuffer/allocate 4)]
-    (.read chan buf)
-    (.flip buf)
-    (.getInt buf)))
-
-(defn read-nippy-from-chan [^SeekableByteChannel chan length]
-  (let [buf (ByteBuffer/allocate length)]
-    (.read chan buf)
-    (c/wire->field (.array buf))))
-
-(defn read-byte-from-chan [^SeekableByteChannel chan]
-  (let [buf (ByteBuffer/allocate 1)]
-    (.read chan buf)
-    (.flip buf)
-    (.get buf)))
+            [cljtable.io.core :as io])
+  (:import (java.nio.channels SeekableByteChannel)))
 
 (defn read-direct
   "should only read values that are not deleted
@@ -30,14 +12,14 @@
     (if offset
       (do
         (.position chan offset)
-        (let [kl (read-int-from-chan chan)
-              k (read-nippy-from-chan chan kl)
-              op_type (read-byte-from-chan chan)]
+        (let [kl (io/read-int-from-chan chan)
+              k (io/read-nippy-from-chan chan kl)
+              op_type (io/read-byte-from-chan chan)]
           (if-not (= k read-key)
             (throw (RuntimeException. "segment key is different than index key, index is inconsistent")))
           (if (= op_type (byte 41))
-            (let [vl (read-int-from-chan chan)
-                  v (read-nippy-from-chan chan vl)]
+            (let [vl (io/read-int-from-chan chan)
+                  v (io/read-nippy-from-chan chan vl)]
               v))))
       nil)))
 
