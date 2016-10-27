@@ -1,6 +1,6 @@
 (ns cljtable.store.merger
   (:require [cljtable.store.segment :as s]
-            [cljtable.store.common :as c])
+            [cljtable.common :as c])
   (:import (java.util.concurrent Executors)
            (cljtable.store.segment ReadOnlySegment)))
 

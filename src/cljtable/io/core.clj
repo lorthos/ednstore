@@ -1,7 +1,6 @@
 (ns cljtable.io.core
   "reads serialization format from underlying channel"
-  (:require [cljtable.serialization.core :as ser]
-            [cljtable.store.common :as c])
+  (:require [cljtable.serialization.core :as ser])
   (:import (java.nio.channels SeekableByteChannel)
            (java.nio ByteBuffer)))
 

@@ -1,5 +1,5 @@
 (ns cljtable.core
-  (:require [cljtable.store.common :as c]
+  (:require [cljtable.common :as c]
             [cljtable.store.writer :as wrt]
             [cljtable.store.reader :as rdr]
             [cljtable.store.segment :as s]

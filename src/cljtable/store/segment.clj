@@ -1,9 +1,9 @@
 (ns cljtable.store.segment
   "all segment management is handled here,
   additional logic about merging should be handled here"
-  (:require [clojure.java.io :as io]
+  (:require
             [nio.core :as nio]
-            [cljtable.store.common :as c])
+            [cljtable.common :as c])
   (:import (java.nio.channels WritableByteChannel SeekableByteChannel)))
 
 (defonce old-segments (atom {}))

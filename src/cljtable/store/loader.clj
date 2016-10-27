@@ -1,6 +1,6 @@
 (ns cljtable.store.loader
   (:require [cljtable.store.reader :as r]
-            [cljtable.store.common :as c]
+            [cljtable.common :as c]
             [cljtable.store.segment :as s]
             [nio.core :as nio]
             [cljtable.io.core :as io])

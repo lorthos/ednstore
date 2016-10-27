@@ -1,13 +1,10 @@
 (ns cljtable.store.writer
   (:require [nio.core :as nio]
-            [cljtable.store.common :refer :all]
             [cljtable.store.segment]
-            [cljtable.store.common :as c]
             [cljtable.serialization.core :as ser])
   (:import (java.nio ByteBuffer)
            (java.io ByteArrayOutputStream)
-           (cljtable.store.segment ActiveSegment))
-  )
+           (cljtable.store.segment ActiveSegment)))
 
 
 (defn get-log-to-write
