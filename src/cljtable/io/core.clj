@@ -1,5 +1,5 @@
 (ns cljtable.io.core
-  "reads serialization format from underlyting channel"
+  "reads serialization format from underlying channel"
   (:require [cljtable.serialization.core :as ser]
             [cljtable.store.common :as c])
   (:import (java.nio.channels SeekableByteChannel)
@@ -18,7 +18,7 @@
     (.flip buf)
     (.getInt buf)))
 
-(defn read-nippy-from-chan [^SeekableByteChannel chan length]
+(defn read-type-from-chan [^SeekableByteChannel chan length]
   (let [buf (ByteBuffer/allocate length)]
     (.read chan buf)
     (ser/wire->field (.array buf))))

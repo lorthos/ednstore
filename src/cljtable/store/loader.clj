@@ -19,11 +19,11 @@
   ;TODO skip instead of read?
   (let [old-offset @offset-atom
         kl (io/read-int-from-chan chan)
-        k (io/read-nippy-from-chan chan kl)
+        k (io/read-type-from-chan chan kl)
         op_type (io/read-byte-from-chan chan)]
     (if (= op_type (byte 41))
       (let [vl (io/read-int-from-chan chan)
-            v (io/read-nippy-from-chan chan vl)]
+            v (io/read-type-from-chan chan vl)]
         (do
           (swap! offset-atom + 4 kl 1 4 vl)
           {:key k :old-offset old-offset :new-offset @offset-atom}))
