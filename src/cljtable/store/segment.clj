@@ -10,11 +10,24 @@
 
 (defonce active-segment (atom nil))
 
-;maybe this is not a good idea
-;can create top level atom for active index and write channels
-;TODO
-(defrecord ActiveSegment [id index last-offset ^WritableByteChannel wc ^SeekableByteChannel rc])
-(defrecord ReadOnlySegment [id index ^SeekableByteChannel rc])
+
+
+(defprotocol SegmentWriter
+  (write-to-segment! [this k v])
+  (delete-from-segment! [this k]))
+
+(defrecord ActiveSegment
+  [id index last-offset ^WritableByteChannel wc ^SeekableByteChannel rc]
+  ;SegmentWriter
+  ;(write-to-segment! [this k v])
+  ;(delete-from-segment! [this k])
+  )
+;index: (atom {:key1 offset1, :key2 offset2})
+;last-offset (atom long1)
+(defrecord ReadOnlySegment
+  [id index ^SeekableByteChannel rc])
+;index: (atom {:key1 offset1, :key2 offset2})
+;last-offset (atom long1)
 
 (defn get-all-segments []
   (cons @active-segment (vals @old-segments)))

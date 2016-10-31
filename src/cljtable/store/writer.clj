@@ -8,7 +8,8 @@
 
 
 (defn get-log-to-write
-  "format will be: LENGTH:KEY:OP_TYPE:LENGTH:VALUE"
+  "helper function to create the byte arrays to be written as key and value
+  format will be: LENGTH:KEY:OP_TYPE:LENGTH:VALUE"
   [#^bytes k #^bytes v]
   (let [out (ByteArrayOutputStream.)
         buf (ByteBuffer/allocate 4)
@@ -24,7 +25,8 @@
     (.toByteArray out)))
 
 (defn get-log-to-delete
-  "format will be: LENGTH:KEY:OP_TYPE"
+  "helper function to create the byte arrays to be written as key and value when marking the record as deleted
+  format will be: LENGTH:KEY:OP_TYPE"
   [#^bytes k]
   (let [out (ByteArrayOutputStream.)
         buf (ByteBuffer/allocate 4)
