@@ -49,7 +49,9 @@
     (loop [current 0]
       (if (= current end)
         {:index @index :offset @offset-atom}
-        (recur (append-next-line-to-index! index (read-next-key-and-offset-and-increment! chan offset-atom)))))))
+        (recur (append-next-line-to-index!
+                 index
+                 (read-next-key-and-offset-and-increment! chan offset-atom)))))))
 
 (defn load-read-only-segment
   "given the segment id, load it as a read only segment"

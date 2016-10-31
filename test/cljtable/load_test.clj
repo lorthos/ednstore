@@ -18,7 +18,7 @@
 
 (deftest load-test
   (testing "load-100k-items"
-    (doseq [x (range 1000)]
+    (doseq [x (range 100000)]
       (let [v (str x (java.util.UUID/randomUUID))]
         (insert! @S x v)
         )

@@ -25,7 +25,8 @@
   "merge the two segments and return a new ReadOnlySegment
 
   Will run in a seperate single background thread"
-  [^ReadOnlySegment older-segment ^ReadOnlySegment newer-segment]
+  [^ReadOnlySegment older-segment
+   ^ReadOnlySegment newer-segment]
   (let [added-keys (atom '())
         deleted-keys (atom '())]
     ;TODO
@@ -41,6 +42,12 @@
 
   )
 
+(defn reduce-segment
+  "reduce the segment into a single map"
+  [segment]
+  ;TODO reduce each segment by loading into a key-offset map
+  ;reduce 2 segments together
+  )
 (defn merge!
   [older-segment-id newer-segment-id]
   (let [segment1 (get @s/old-segments older-segment-id)
