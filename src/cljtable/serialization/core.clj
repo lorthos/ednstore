@@ -1,6 +1,8 @@
 (ns cljtable.serialization.core
   "serialization of key and value pairs"
-  (:require [taoensso.nippy :as nippy]))
+  (:require [taoensso.nippy :as nippy])
+  (:import (java.io ByteArrayOutputStream)
+           (java.nio ByteBuffer)))
 
 
 (defn field->wire
@@ -14,3 +16,33 @@
   [^bytes wire-formatted]
   (nippy/thaw wire-formatted))
 
+
+(defn get-log-to-write
+  "helper function to create the byte arrays to be written as key and value
+  format will be: LENGTH:KEY:OP_TYPE:LENGTH:VALUE"
+  [#^bytes k #^bytes v]
+  (let [out (ByteArrayOutputStream.)
+        buf (ByteBuffer/allocate 4)
+        kl (alength k)
+        vl (alength v)]
+    (.write out (.array (.putInt buf kl)))
+    (.write out k)
+    (.clear buf)
+    (.write out (byte 41))
+    (.write out (.array (.putInt buf vl)))
+    (.write out v)
+    (.clear buf)
+    (.toByteArray out)))
+
+(defn get-log-to-delete
+  "helper function to create the byte arrays to be written as key and value when marking the record as deleted
+  format will be: LENGTH:KEY:OP_TYPE"
+  [#^bytes k]
+  (let [out (ByteArrayOutputStream.)
+        buf (ByteBuffer/allocate 4)
+        kl (alength k)]
+    (.write out (.array (.putInt buf kl)))
+    (.write out k)
+    (.clear buf)
+    (.write out (byte 42))
+    (.toByteArray out)))

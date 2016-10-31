@@ -2,26 +2,15 @@
   "all segment management is handled here,
   additional logic about merging should be handled here"
   (:require
-            [nio.core :as nio]
-            [cljtable.common :as c])
+    [nio.core :as nio]
+    [cljtable.common :as c])
   (:import (java.nio.channels WritableByteChannel SeekableByteChannel)))
 
 (defonce old-segments (atom {}))
-
 (defonce active-segment (atom nil))
 
-
-
-(defprotocol SegmentWriter
-  (write-to-segment! [this k v])
-  (delete-from-segment! [this k]))
-
 (defrecord ActiveSegment
-  [id index last-offset ^WritableByteChannel wc ^SeekableByteChannel rc]
-  ;SegmentWriter
-  ;(write-to-segment! [this k v])
-  ;(delete-from-segment! [this k])
-  )
+  [id index last-offset ^WritableByteChannel wc ^SeekableByteChannel rc])
 ;index: (atom {:key1 offset1, :key2 offset2})
 ;last-offset (atom long1)
 (defrecord ReadOnlySegment
@@ -36,7 +25,12 @@
   "make a new segment at the given path with the given id"
   [id]
   (let [file (c/get-segment-file! id)]
-    (ActiveSegment. id (atom {}) (atom 0) (nio/writable-channel file) (nio/readable-channel file))))
+    (map->ActiveSegment
+      {:id          id
+       :index       (atom {})
+       :last-offset (atom 0)
+       :wc          (nio/writable-channel file)
+       :rc          (nio/readable-channel file)})))
 
 (defn close-segment-fully! [segment]
   (if (:wc segment)
@@ -64,7 +58,10 @@
         (if old-active
           (do
             (.close (:wc old-active))
-            (swap! old-segments assoc old-id (ReadOnlySegment. old-id (:index old-active) (:rc old-active)))))
+            (swap! old-segments assoc old-id
+                   (map->ReadOnlySegment {:id    old-id
+                                          :index (:index old-active)
+                                          :rc    (:rc old-active)}))))
         )
       (reset! active-segment segment))
     )

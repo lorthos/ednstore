@@ -1,11 +1,10 @@
 (ns cljtable.store.loader
   (:require [cljtable.store.reader :as r]
             [cljtable.common :as c]
-            [cljtable.store.segment :as s]
+            [cljtable.store.segment :as s :refer :all]
             [nio.core :as nio]
             [cljtable.io.core :as io])
-  (:import (java.nio.channels SeekableByteChannel)
-           (cljtable.store.segment ReadOnlySegment)))
+  (:import (java.nio.channels SeekableByteChannel)))
 
 (defn read-next-key-and-offset-and-increment!
   "given a channel that is at the end position of a record (or at the beginning of the file)
@@ -58,4 +57,7 @@
   (let [segment-file (c/get-segment-file! id)
         read-chan (nio/readable-channel segment-file)
         loaded (load-index read-chan)]
-    (ReadOnlySegment. id (atom (:index loaded)) read-chan)))
+    (map->ReadOnlySegment
+      {:id    id
+       :index (atom (:index loaded))
+       :rc    read-chan})))
