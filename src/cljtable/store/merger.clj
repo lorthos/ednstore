@@ -43,8 +43,8 @@
   )
 
 (defn reduce-segment
-  "reduce the segment into a single map"
-  [segment]
+  "reduce 2 segment logs into 1"
+  [segment-seq-old segment-seq-new]
   ;TODO reduce each segment by loading into a key-offset map
   ;reduce 2 segments together
   )

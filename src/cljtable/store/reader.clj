@@ -1,7 +1,9 @@
 (ns cljtable.store.reader
-  (:require [cljtable.store.segment :as s]
+  (:require [cljtable.store.segment :as s :refer :all]
             [cljtable.io.core :as io])
-  (:import (java.nio.channels SeekableByteChannel)))
+  (:import (java.nio.channels SeekableByteChannel)
+           (java.util Iterator)
+           (cljtable.store.segment SegmentOperationLog)))
 
 (defn read-direct
   "should only read values that are not deleted
@@ -44,7 +46,47 @@
       ;TODO
       )))
 
+(defn ^SegmentOperationLog read-log-operation!
+  "given a channel that is at the end position of a record (or at the beginning of the file)
+  1. reads the length of the key
+  2. reads the key
+  3. reads the operation type
+  4. if update - reads the length of the value
+  5. reads the value
+  6. calculates total bytes read returns the key and new offset"
+  [chan offset-atom]
+  (let [old-offset @offset-atom
+        kl (io/read-int-from-chan chan)
+        k (io/read-type-from-chan chan kl)
+        op_type (io/read-byte-from-chan chan)]
+    (if (= op_type (byte 41))
+      (let [vl (io/read-int-from-chan chan)
+            v (io/read-type-from-chan chan vl)]
+        (do
+          (swap! offset-atom + 4 kl 1 4 vl)
+          (map->SegmentOperationLog
+            {:key     k :old-offset old-offset :new-offset @offset-atom
+             :op-type op_type})))
+      (do
+        (swap! offset-atom + 4 kl 1)
+        (map->SegmentOperationLog
+          {:key     k :old-offset old-offset :new-offset @offset-atom
+           :op-type op_type})))))
 
+(defn segment->seq
+  "return a lazy sequence of operations
+  that were used to create the segment
 
-
-
+  will read evey operation including the deletion markers,
+  does not read the value"
+  [^SeekableByteChannel read-channel]
+  (.position read-channel 0)
+  (let [current (atom 0)
+        end (.size read-channel)]
+    (iterator-seq
+      (reify Iterator
+        (hasNext [this] (< @current end))
+        (next [this]
+          (read-log-operation!
+            read-channel
+            current))))))

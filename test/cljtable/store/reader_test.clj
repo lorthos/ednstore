@@ -1,7 +1,7 @@
 (ns cljtable.store.reader-test
   (:require [clojure.test :refer :all]
             [cljtable.store.reader :refer :all]
-            [cljtable.store.segment :as s]
+            [cljtable.store.segment :as s :refer :all]
             [cljtable.store.writer :as wrt]))
 
 
@@ -55,9 +55,62 @@
       (is (= "v11" (read-all "s1")))
       (is (= "v0" (read-all "s0")))
       (wrt/write! "s2" "v2" @s/active-segment)
-      (is (= "v2" (read-all "s2")))
-      )
+      (is (= "v2" (read-all "s2")))))
+  (testing "segment as collection of operations"
+    (is (= '({:key        "A"
+              :new-offset 33
+              :old-offset 0
+              :op-type    41}
+              {:key        "AAAA"
+               :new-offset 72
+               :old-offset 33
+               :op-type    41}
+              {:key        "AAAA"
+               :new-offset 92
+               :old-offset 72
+               :op-type    42}
+              {:key        "UPDATE"
+               :new-offset 131
+               :old-offset 92
+               :op-type    41}
+              {:key        "UPDATE"
+               :new-offset 170
+               :old-offset 131
+               :op-type    41}
+              {:key        "UPDATE"
+               :new-offset 192
+               :old-offset 170
+               :op-type    42}
+              {:key        "s0"
+               :new-offset 227
+               :old-offset 192
+               :op-type    41})
+           (->> (get @s/old-segments 0)
+                :rc
+                segment->seq
+                (map #(into {} %)))))
 
+    (is (= '({:key        "s1"
+              :new-offset 35
+              :old-offset 0
+              :op-type    41}
+              {:key        "s1"
+               :new-offset 71
+               :old-offset 35
+               :op-type    41})
+           (->> (get @s/old-segments 1)
+                :rc
+                segment->seq
+                (map #(into {} %)))))
+
+    (is (= [{:key        "s2"
+             :new-offset 35
+             :old-offset 0
+             :op-type    41}]
+           (->> @s/active-segment
+                :rc
+                segment->seq
+                (map #(into {} %)))))
     )
-
   )
+

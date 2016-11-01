@@ -18,6 +18,11 @@
 ;index: (atom {:key1 offset1, :key2 offset2})
 ;last-offset (atom long1)
 
+(defrecord SegmentOperationLog
+  [key old-offset new-offset op-type])
+;{:key     k :old-offset old-offset :new-offset @offset-atom
+;:op-type op_type}
+
 (defn get-all-segments []
   (cons @active-segment (vals @old-segments)))
 
