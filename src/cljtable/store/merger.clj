@@ -17,9 +17,31 @@
   [read-only-segments]
   ;must have at least 2 active segments
   (when (>= (count read-only-segments) 2)
-    (take 2 (sort < read-only-segments))
-    )
-  )
+    (take 2 (sort < read-only-segments))))
+
+(defn cleanup-log
+  "given a log sequence, reduce it in a way that we end up with the
+  latest operation for each key
+  should be limited by the key cardinality"
+  [log-seq]
+  (let [merge-map (atom {})]
+    (doall
+      (map
+        #(swap! merge-map assoc (:key %) %)
+        log-seq))
+    (vals
+      @merge-map)))
+
+(defn make-merged-op-log [old-log new-log]
+  (let [old-log
+        (map #(assoc %
+               :from
+               :old) old-log)
+        new-log
+        (map #(assoc %
+               :from
+               :new) new-log)]
+    (concat old-log new-log)))
 
 (defn make-merge!
   "merge the two segments and return a new ReadOnlySegment
