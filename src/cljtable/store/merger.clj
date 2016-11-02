@@ -84,13 +84,14 @@
   (let [oplog (make-oplog-for-new-segment old-segment
                                           new-segment)
         new-segment (s/make-new-segment! 666)]
-    (log/debugf "Oplog: %s" (into [] oplog))
+    (log/infof "Read Oplog: %s" (into [] oplog))
     (doall
       (map
         (fn [oplog-item]
           (let [pair (read-oplog-item oplog-item
                                       old-segment
                                       new-segment)]
+            (log/infof "Read the following pair %s" pair)
             (w/write! (:key pair)
                       (:val pair)
                       new-segment))

@@ -180,6 +180,33 @@
                                                            @new-seg)))
           "mergable oplog should only have 1 key (latest) since the other key has been deleted")
 
+      (is (= {:key "k1"
+              :val "v4"}
+             (read-oplog-item (first
+                                (make-oplog-for-new-segment
+                                  @old-seg
+                                  @new-seg))
+                              @old-seg
+                              @new-seg))
+
+          "read the oplog item from its original segment")
+
+      (is (= {:key "k1"
+              :val "v1"}
+             (read-oplog-item
+               (map->SegmentOperationLog
+                 {:from       :old
+                  :key        "k1"
+                  :new-offset 35
+                  :old-offset 0
+                  :op-type    41})
+               @old-seg
+               @new-seg))
+
+          "read the oplog item from its original segment")
+
+
+
       (make-merge! @old-seg
                    @new-seg)
 
