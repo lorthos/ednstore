@@ -122,7 +122,7 @@
 ;    new-segment))
 
 
-(deftest mering-test
+(deftest merging-test
   (testing "creating 2 custom segments an merging them"
     (let [old-seg
           (atom (seg/make-new-segment! 600))

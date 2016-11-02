@@ -55,13 +55,13 @@
   [^SegmentOperationLog oplog
    old-segment
    new-segment]
-  (log/debugf "reading oplog item from disk: %s" oplog)
+  (log/infof "reading oplog item from disk: %s" oplog)
   (let [^SeekableByteChannel source-chan
         (if (= :old (:from oplog))
           (:rc old-segment)
           (:rc new-segment))
         beginning (:old-offset oplog)]
-    (log/debugf "read parameters %s %s" source-chan beginning)
+    (log/infof "read parameters %s %s" source-chan beginning)
     (r/read-kv source-chan beginning)))
 
 
@@ -88,6 +88,7 @@
     (doall
       (map
         (fn [oplog-item]
+          (log/infof "Read the following oplog item %s" (into {} oplog-item))
           (let [pair (read-oplog-item oplog-item
                                       old-segment
                                       new-segment)]
