@@ -1,6 +1,7 @@
 (ns cljtable.store.reader
   (:require [cljtable.store.segment :as s :refer :all]
-            [cljtable.io.core :as io])
+            [cljtable.io.core :as io]
+            [clojure.tools.logging :as log])
   (:import (java.nio.channels SeekableByteChannel)
            (java.util Iterator)
            (cljtable.store.segment SegmentOperationLog)))
@@ -9,12 +10,12 @@
   "read the next key value pair starting with the given offset from the channel"
   [^SeekableByteChannel chan offset]
   (do
-    (println "seek to position" offset "for channel: " chan)
+    (log/debugf "seek to position %s for channel: %s" offset chan)
     (.position chan offset)
     (let [kl (io/read-int-from-chan chan)
           k (io/read-type-from-chan chan kl)
           op_type (io/read-byte-from-chan chan)]
-      (println "Read key length: " kl " key: " k " op-type: " op_type)
+      (log/infof "Read key length: %s key: %s op-type: %s" kl k op_type)
       (if (= op_type (byte 41))
         (let [vl (io/read-int-from-chan chan)
               v (io/read-type-from-chan chan vl)]

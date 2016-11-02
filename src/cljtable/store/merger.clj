@@ -2,7 +2,8 @@
   (:require [cljtable.store.segment :as s]
             [cljtable.common :as c]
             [cljtable.store.reader :as r]
-            [cljtable.store.writer :as w])
+            [cljtable.store.writer :as w]
+            [clojure.tools.logging :as log])
   (:import (java.util.concurrent Executors)
            (cljtable.store.segment ReadOnlySegment SegmentOperationLog)
            (java.nio.channels SeekableByteChannel)))
@@ -54,13 +55,13 @@
   [^SegmentOperationLog oplog
    old-segment
    new-segment]
-  (println "reading oplog item from disk: " oplog)
+  (log/debugf "reading oplog item from disk: %s" oplog)
   (let [^SeekableByteChannel source-chan
         (if (= :old (:from oplog))
           (:rc old-segment)
           (:rc new-segment))
         beginning (:old-offset oplog)]
-    (println "read parameters" source-chan beginning)
+    (log/debugf "read parameters %s %s" source-chan beginning)
     (r/read-kv source-chan beginning)))
 
 
@@ -83,7 +84,7 @@
   (let [oplog (make-oplog-for-new-segment old-segment
                                           new-segment)
         new-segment (s/make-new-segment! 666)]
-    (println "Oplog" (into [] oplog))
+    (log/debugf "Oplog: %s" (into [] oplog))
     (doall
       (map
         (fn [oplog-item]
