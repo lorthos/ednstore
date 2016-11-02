@@ -7,7 +7,7 @@
 (defn segment-fixture [f]
   (s/roll-new-segment! 0)
   (f)
-  (s/close-segment-fully! @s/active-segment)
+  (s/close-segment! @s/active-segment)
   (reset! s/active-segment nil))
 
 (use-fixtures :each segment-fixture)

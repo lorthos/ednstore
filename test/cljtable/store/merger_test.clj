@@ -1,8 +1,8 @@
 (ns cljtable.store.merger-test
   (:require [clojure.test :refer :all]
             [cljtable.store.merger :refer :all]
-            [cljtable.store.segment :as s :refer :all]
-            [cljtable.store.segment :as seg]
+            [cljtable.store.segment :as seg :refer :all]
+            [cljtable.store.loader :as lo]
             [cljtable.store.writer :as w]
             [cljtable.store.reader :as r]))
 
@@ -206,11 +206,16 @@
           "read the oplog item from its original segment")
 
 
+      (seg/close-segment! @old-seg)
+      (seg/close-segment! @new-seg)
+
+      (reset! old-seg (lo/load-read-only-segment 600))
+      (reset! new-seg (lo/load-read-only-segment 601))
 
       (make-merge! @old-seg
                    @new-seg)
 
-      (seg/close-segment-fully! @old-seg)
-      (seg/close-segment-fully! @new-seg)
+      (seg/close-segment! @old-seg)
+      (seg/close-segment! @new-seg)
 
       )))

@@ -47,7 +47,7 @@
 
   (stop!
     [this]
-    (dorun (map s/close-segment-fully! (s/get-all-segments)))
+    (dorun (map s/close-segment! (s/get-all-segments)))
     (reset! s/active-segment nil)
     (reset! s/old-segments {})))
 

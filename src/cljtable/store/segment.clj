@@ -37,7 +37,7 @@
        :wc          (nio/writable-channel file)
        :rc          (nio/readable-channel file)})))
 
-(defn close-segment-fully! [segment]
+(defn close-segment! [segment]
   (if (:wc segment)
     (.close (:wc segment)))
   (.close (:rc segment)))
