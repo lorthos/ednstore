@@ -1,8 +1,11 @@
 (ns cljtable.store.merger
   (:require [cljtable.store.segment :as s]
-            [cljtable.common :as c])
+            [cljtable.common :as c]
+            [cljtable.store.reader :as r]
+            [cljtable.store.writer :as w])
   (:import (java.util.concurrent Executors)
-           (cljtable.store.segment ReadOnlySegment)))
+           (cljtable.store.segment ReadOnlySegment SegmentOperationLog)
+           (java.nio.channels SeekableByteChannel)))
 
 (def merger-exec (Executors/newSingleThreadExecutor))
 
@@ -32,7 +35,9 @@
     (vals
       @merge-map)))
 
-(defn make-merged-op-log [old-log new-log]
+(defn make-merged-op-log
+  "merge 2 oplogs, associating a new field to indicate which log its coming from"
+  [old-log new-log]
   (let [old-log
         (map #(assoc %
                :from
@@ -43,33 +48,54 @@
                :new) new-log)]
     (concat old-log new-log)))
 
+(defn read-oplog-item
+  "given a single merged oplog item and 2 segments,
+  read the record fully including the value"
+  [^SegmentOperationLog oplog
+   old-segment
+   new-segment]
+  (println "reading oplog item from disk: " oplog)
+  (let [^SeekableByteChannel source-chan
+        (if (= :old (:from oplog))
+          (:rc old-segment)
+          (:rc new-segment))
+        beginning (:old-offset oplog)]
+    (println "read parameters" source-chan beginning)
+    (r/read-kv source-chan beginning)))
+
+
+(defn make-oplog-for-new-segment
+  "the oplog for the segment to be written does not need to contain the deletion marker?"
+  [old-segment new-segment]
+  (filter #(= 41 (:op-type %))
+          (cleanup-log
+            (make-merged-op-log
+              (r/segment->seq (:rc old-segment))
+              (r/segment->seq (:rc new-segment))))))
+
 (defn make-merge!
   "merge the two segments and return a new ReadOnlySegment
 
   Will run in a seperate single background thread"
-  [^ReadOnlySegment older-segment
-   ^ReadOnlySegment newer-segment]
-  (let [added-keys (atom '())
-        deleted-keys (atom '())]
-    ;TODO
-    )
-  ;both segments has indices
-  ;for each key in index1
-  ;walk on the newer segment
-  ;added '()
-  ;deleted '()
-  ;
-  ;walk on the older segment
-  ;append to added or deleted if it does not exist
+  [^ReadOnlySegment old-segment
+   ^ReadOnlySegment new-segment]
 
-  )
+  (let [oplog (make-oplog-for-new-segment old-segment
+                                          new-segment)
+        new-segment (s/make-new-segment! 666)]
+    (println "Oplog" (into [] oplog))
+    (doall
+      (map
+        (fn [oplog-item]
+          (let [pair (read-oplog-item oplog-item
+                                      old-segment
+                                      new-segment)]
+            (w/write! (:key pair)
+                      (:val pair)
+                      new-segment))
+          )
+        oplog))))
 
-(defn reduce-segment
-  "reduce 2 segment logs into 1"
-  [segment-seq-old segment-seq-new]
-  ;TODO reduce each segment by loading into a key-offset map
-  ;reduce 2 segments together
-  )
 (defn merge!
   [older-segment-id newer-segment-id]
   (let [segment1 (get @s/old-segments older-segment-id)

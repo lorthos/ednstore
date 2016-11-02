@@ -5,6 +5,21 @@
            (java.util Iterator)
            (cljtable.store.segment SegmentOperationLog)))
 
+(defn read-kv
+  "read the next key value pair starting with the given offset from the channel"
+  [^SeekableByteChannel chan offset]
+  (do
+    (println "seek to position" offset "for channel: " chan)
+    (.position chan offset)
+    (let [kl (io/read-int-from-chan chan)
+          k (io/read-type-from-chan chan kl)
+          op_type (io/read-byte-from-chan chan)]
+      (println "Read key length: " kl " key: " k " op-type: " op_type)
+      (if (= op_type (byte 41))
+        (let [vl (io/read-int-from-chan chan)
+              v (io/read-type-from-chan chan vl)]
+          {:key k :val v})))))
+
 (defn read-direct
   "should only read values that are not deleted
   old indexes might still contain deleted-record's key"
@@ -12,17 +27,7 @@
   (let [offset (get @(:index segment) read-key nil)
         chan ^SeekableByteChannel (:rc segment)]
     (if offset
-      (do
-        (.position chan offset)
-        (let [kl (io/read-int-from-chan chan)
-              k (io/read-type-from-chan chan kl)
-              op_type (io/read-byte-from-chan chan)]
-          (if-not (= k read-key)
-            (throw (RuntimeException. "segment key is different than index key, index is inconsistent")))
-          (if (= op_type (byte 41))
-            (let [vl (io/read-int-from-chan chan)
-                  v (io/read-type-from-chan chan vl)]
-              v))))
+      (:val (read-kv chan offset))
       nil)))
 
 (defn segment-has-key? [k segment]

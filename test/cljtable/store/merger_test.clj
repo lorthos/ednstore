@@ -2,6 +2,8 @@
   (:require [clojure.test :refer :all]
             [cljtable.store.merger :refer :all]
             [cljtable.store.segment :as s :refer :all]
+            [cljtable.store.segment :as seg]
+            [cljtable.store.writer :as w]
             [cljtable.store.reader :as r]))
 
 
@@ -108,20 +110,80 @@
   )
 
 
-(defn create-merged-segment-from-oplog
-  [merged-oplog old-segment new-segment]
-  ;now based on the op, go read the value and append to new segment
-  ;TODO resume
-  )
-
-
 ;(let [old-segment (get @s/old-segments 0)
-;      new-segment (get @s/old-segments 1)]
-;  (create-merged-segment-from-oplog
-;    (cleanup-log
-;      (make-merged-op-log
-;        (r/segment->seq (:rc old-segment))
-;        (r/segment->seq (:rc new-segment))))
+;      new-segment (get @s/old-segments 1)
+;      oplog (cleanup-log
+;              (make-merged-op-log
+;                (r/segment->seq (:rc old-segment))
+;                (r/segment->seq (:rc new-segment))))]
+;  (read-oplog-item
+;    (first oplog)
 ;    old-segment
-;    new-segment
-;    ))
+;    new-segment))
+
+
+(deftest mering-test
+  (testing "creating 2 custom segments an merging them"
+    (let [old-seg
+          (atom (seg/make-new-segment! 600))
+          new-seg
+          (atom (seg/make-new-segment! 601))]
+      (w/write! "k1" "v1" @old-seg)
+      (w/write! "k1" "v2" @old-seg)
+      (w/write! "k2" "v1" @old-seg)
+
+      (w/write! "k1" "v3" @new-seg)
+      (w/write! "k1" "v4" @new-seg)
+      (w/delete! "k2" @new-seg)
+
+      (is (= '({:from       :old
+                :key        "k1"
+                :new-offset 35
+                :old-offset 0
+                :op-type    41}
+                {:from       :old
+                 :key        "k1"
+                 :new-offset 70
+                 :old-offset 35
+                 :op-type    41}
+                {:from       :old
+                 :key        "k2"
+                 :new-offset 105
+                 :old-offset 70
+                 :op-type    41}
+                {:from       :new
+                 :key        "k1"
+                 :new-offset 35
+                 :old-offset 0
+                 :op-type    41}
+                {:from       :new
+                 :key        "k1"
+                 :new-offset 70
+                 :old-offset 35
+                 :op-type    41}
+                {:from       :new
+                 :key        "k2"
+                 :new-offset 88
+                 :old-offset 70
+                 :op-type    42})
+             (make-merged-op-log
+               (map #(into {} %) (r/segment->seq (:rc @old-seg)))
+               (map #(into {} %) (r/segment->seq (:rc @new-seg)))))
+          "verify oplog failed")
+
+      (is (= '({:from       :new
+                :key        "k1"
+                :new-offset 70
+                :old-offset 35
+                :op-type    41})
+             (map #(into {} %) (make-oplog-for-new-segment @old-seg
+                                                           @new-seg)))
+          "mergable oplog should only have 1 key (latest) since the other key has been deleted")
+
+      (make-merge! @old-seg
+                   @new-seg)
+
+      (seg/close-segment-fully! @old-seg)
+      (seg/close-segment-fully! @new-seg)
+
+      )))
