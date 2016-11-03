@@ -20,10 +20,6 @@
   (testing "load-100k-items"
     (doseq [x (range 100000)]
       (let [v (str x (java.util.UUID/randomUUID))]
-        (insert! @S x v)
-        )
-      )
-    (is (string? (lookup @S 42)))
-    )
-  )
+        (insert! @S x v)))
+    (is (string? (lookup @S 42)))))
 

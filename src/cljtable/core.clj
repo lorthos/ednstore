@@ -4,8 +4,9 @@
             [cljtable.store.reader :as rdr]
             [cljtable.store.segment :as s]
             [cljtable.store.loader :as ldr]
+            [cljtable.env :as e]
             [clojure.java.io :as io]
-            )
+            [clojure.tools.logging :as log])
   (:refer cljtable.common :only [IKVStorage])
   (:import (java.util.concurrent Executors)
            (java.io File)))
@@ -18,7 +19,13 @@
 
 (deftype SimpleDiskStore [] IKVStorage
   (insert! [this k v]
-    (c/do-sequential exec (wrt/write! k v @s/active-segment)))
+    (if (< @(:last-offset @s/active-segment)
+           (:segment-roll-size e/props))
+      (c/do-sequential exec (wrt/write! k v @s/active-segment))
+      (do
+        (log/infof "Segment: %s has reached max size, rolling new" (:id @s/active-segment))
+        (s/roll-new-segment! (inc (:id @s/active-segment)))
+        )))
 
   (delete! [this k]
     (c/do-sequential exec (wrt/delete! k @s/active-segment)))

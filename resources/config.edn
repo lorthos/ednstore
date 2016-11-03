@@ -1,5 +1,5 @@
 {
- :engine :plain
- ;:engine :sstable
- :path   "target/segments/"
+ :path              "target/segments/"
+ :segment-roll-size 1000000
+
  }

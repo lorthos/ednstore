@@ -207,8 +207,6 @@
 
           "read the oplog item from its original segment")
 
-      ;(w/write! "k3" "testing" @new-seg)
-
       (seg/close-segment! @old-seg)
       (seg/close-segment! @new-seg)
 
