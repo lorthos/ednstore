@@ -4,7 +4,9 @@
             [cljtable.store.segment :as seg :refer :all]
             [cljtable.store.loader :as lo]
             [cljtable.store.writer :as w]
-            [cljtable.store.reader :as r]))
+            [cljtable.store.reader :as r]
+            [cljtable.env :as env]
+            [clojure.java.io :as io]))
 
 
 (deftest merge-candidates
@@ -132,8 +134,8 @@
       (w/write! "k1" "v2" @old-seg)
       (w/write! "k2" "v1" @old-seg)
 
-      (w/write! "k1" "v3" @new-seg)
-      (w/write! "k1" "v4" @new-seg)
+      (w/write! "k1" "v333" @new-seg)
+      (w/write! "k1" "v444" @new-seg)
       (w/delete! "k2" @new-seg)
 
       (is (= '({:from       :old
@@ -153,18 +155,18 @@
                  :op-type    41}
                 {:from       :new
                  :key        "k1"
-                 :new-offset 35
+                 :new-offset 37
                  :old-offset 0
                  :op-type    41}
                 {:from       :new
                  :key        "k1"
-                 :new-offset 70
-                 :old-offset 35
+                 :new-offset 74
+                 :old-offset 37
                  :op-type    41}
                 {:from       :new
                  :key        "k2"
-                 :new-offset 88
-                 :old-offset 70
+                 :new-offset 92
+                 :old-offset 74
                  :op-type    42})
              (make-merged-op-log
                (map #(into {} %) (r/segment->seq (:rc @old-seg)))
@@ -173,15 +175,15 @@
 
       (is (= '({:from       :new
                 :key        "k1"
-                :new-offset 70
-                :old-offset 35
+                :new-offset 74
+                :old-offset 37
                 :op-type    41})
              (map #(into {} %) (make-oplog-for-new-segment @old-seg
                                                            @new-seg)))
           "mergable oplog should only have 1 key (latest) since the other key has been deleted")
 
       (is (= {:key "k1"
-              :val "v4"}
+              :val "v444"}
              (read-oplog-item (first
                                 (make-oplog-for-new-segment
                                   @old-seg
@@ -205,6 +207,7 @@
 
           "read the oplog item from its original segment")
 
+      ;(w/write! "k3" "testing" @new-seg)
 
       (seg/close-segment! @old-seg)
       (seg/close-segment! @new-seg)

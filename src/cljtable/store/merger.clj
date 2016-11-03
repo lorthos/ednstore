@@ -6,7 +6,7 @@
             [clojure.tools.logging :as log])
   (:import (java.util.concurrent Executors)
            (cljtable.store.segment ReadOnlySegment SegmentOperationLog)
-           (java.nio.channels SeekableByteChannel)))
+           (java.nio.channels SeekableByteChannel WritableByteChannel)))
 
 (def merger-exec (Executors/newSingleThreadExecutor))
 
@@ -78,26 +78,30 @@
   "merge the two segments and return a new ReadOnlySegment
 
   Will run in a seperate single background thread"
-  [^ReadOnlySegment old-segment
-   ^ReadOnlySegment new-segment]
-
-  (let [oplog (make-oplog-for-new-segment old-segment
-                                          new-segment)
+  [^ReadOnlySegment older-segment
+   ^ReadOnlySegment newer-segment]
+  (let [oplog (make-oplog-for-new-segment older-segment
+                                          newer-segment)
         new-segment (s/make-new-segment! 666)]
     (log/infof "Read Oplog: %s" (into [] oplog))
-    (doall
+    (log/infof "segment created: %s" (into {} new-segment))
+    (dorun
       (map
         (fn [oplog-item]
           (log/infof "Read the following oplog item %s" (into {} oplog-item))
           (let [pair (read-oplog-item oplog-item
-                                      old-segment
-                                      new-segment)]
+                                      older-segment
+                                      newer-segment)]
             (log/infof "Read the following pair %s" pair)
             (w/write! (:key pair)
                       (:val pair)
                       new-segment))
           )
-        oplog))))
+        oplog))
+    ;(.flush ^WritableByteChannel (:wc new-segment))
+    (s/close-segment! new-segment)
+    (log/infof "segment after write: %s" (into {} new-segment))
+    ))
 
 (defn merge!
   [older-segment-id newer-segment-id]
