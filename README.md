@@ -11,10 +11,10 @@ FIXME
 
 ## TODO
 
-- loading test
++ loading test
++ segment merger
 - performance & validation test
 - externalize serialization
-- segment merger
 - benchmark
 
 ## License

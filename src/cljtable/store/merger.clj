@@ -55,13 +55,13 @@
   [^SegmentOperationLog oplog
    old-segment
    new-segment]
-  (log/infof "reading oplog item from disk: %s" oplog)
+  (log/debugf "reading oplog item from disk: %s" oplog)
   (let [^SeekableByteChannel source-chan
         (if (= :old (:from oplog))
           (:rc old-segment)
           (:rc new-segment))
         beginning (:old-offset oplog)]
-    (log/infof "read parameters %s %s" source-chan beginning)
+    (log/debugf "read parameters %s %s" source-chan beginning)
     (r/read-kv source-chan beginning)))
 
 
@@ -83,16 +83,16 @@
   (let [oplog (make-oplog-for-new-segment older-segment
                                           newer-segment)
         new-segment (s/make-new-segment! 666)]
-    (log/infof "Read Oplog: %s" (into [] oplog))
-    (log/infof "segment created: %s" (into {} new-segment))
+    (log/debugf "Read Oplog: %s" (into [] oplog))
+    (log/debugf "segment created: %s" (into {} new-segment))
     (dorun
       (map
         (fn [oplog-item]
-          (log/infof "Read the following oplog item %s" (into {} oplog-item))
+          (log/debugf "Read the following oplog item %s" (into {} oplog-item))
           (let [pair (read-oplog-item oplog-item
                                       older-segment
                                       newer-segment)]
-            (log/infof "Read the following pair %s" pair)
+            (log/debugf "Read the following pair %s" pair)
             (w/write! (:key pair)
                       (:val pair)
                       new-segment))
@@ -100,7 +100,7 @@
         oplog))
     ;(.flush ^WritableByteChannel (:wc new-segment))
     (s/close-segment! new-segment)
-    (log/infof "segment after write: %s" (into {} new-segment))
+    (log/debugf "segment after write: %s" (into {} new-segment))
     ))
 
 (defn merge!

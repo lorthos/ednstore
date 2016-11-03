@@ -10,12 +10,12 @@
   "read the next key value pair starting with the given offset from the channel"
   [^SeekableByteChannel chan offset]
   (do
-    (log/infof "seek to position %s for channel: %s" offset chan)
+    (log/debugf "seek to position %s for channel: %s" offset chan)
     (.position chan offset)
     (let [kl (io/read-int-from-chan chan)
           k (io/read-type-from-chan chan kl)
           op_type (io/read-byte-from-chan chan)]
-      (log/infof "Read key length: %s key: %s op-type: %s" kl k op_type)
+      (log/debugf "Read key length: %s key: %s op-type: %s" kl k op_type)
       (if (= op_type (byte 41))
         (let [vl (io/read-int-from-chan chan)
               v (io/read-type-from-chan chan vl)]

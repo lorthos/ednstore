@@ -16,7 +16,7 @@
   [k v ^ActiveSegment segment]
   (let [key (ser/field->wire k)
         val (ser/field->wire v)
-        barray (ser/get-log-to-write key val)
+        barray (ser/create-append-log key val)
         append-offset-length (alength barray)]
 
     ;TODO should be atomic
@@ -33,7 +33,7 @@
   2.update index
   3.append segment offset counter"
   [k ^ActiveSegment segment]
-  (let [barray (ser/get-log-to-delete (ser/field->wire k))
+  (let [barray (ser/create-tombstone-log (ser/field->wire k))
         append-offset-length (alength barray)]
     ;TODO atomic
     (swap! (:index segment) assoc k @(:last-offset segment))

@@ -17,7 +17,7 @@
   (nippy/thaw wire-formatted))
 
 
-(defn get-log-to-write
+(defn create-append-log
   "helper function to create the byte arrays to be written as key and value
   format will be: LENGTH:KEY:OP_TYPE:LENGTH:VALUE"
   [#^bytes k #^bytes v]
@@ -34,7 +34,7 @@
     (.clear buf)
     (.toByteArray out)))
 
-(defn get-log-to-delete
+(defn create-tombstone-log
   "helper function to create the byte arrays to be written as key and value when marking the record as deleted
   format will be: LENGTH:KEY:OP_TYPE"
   [#^bytes k]
