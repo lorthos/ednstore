@@ -111,19 +111,6 @@
                                  clean-log-new)))))
   )
 
-
-;(let [old-segment (get @s/old-segments 0)
-;      new-segment (get @s/old-segments 1)
-;      oplog (cleanup-log
-;              (make-merged-op-log
-;                (r/segment->seq (:rc old-segment))
-;                (r/segment->seq (:rc new-segment))))]
-;  (read-oplog-item
-;    (first oplog)
-;    old-segment
-;    new-segment))
-
-
 (deftest merging-test
   (testing "creating 2 custom segments an merging them"
     (let [old-seg
