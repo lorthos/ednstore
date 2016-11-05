@@ -4,7 +4,8 @@
             [ednstore.store.segment :as seg :refer :all]
             [ednstore.store.writer :as w]
             [ednstore.store.segment :as s]
-            [ednstore.store.loader :as lo]))
+            [ednstore.store.loader :as lo])
+  (:import (java.io FileNotFoundException)))
 
 
 (deftest segment-merge-test
@@ -41,8 +42,15 @@
         (println "***" @segment-map)
         (is (= '(103 666)
                (map :id
-                    (vals @segment-map)))))
+                    (vals @segment-map)))
+            "old segments should be dropped and merged segment should be present"
+            ))
 
-      )
-    )
-  )
+      (is (thrown? FileNotFoundException
+                   (lo/load-read-only-segment 101))
+          "segment should have been deleted from disk")
+
+      (is (thrown? FileNotFoundException
+                   (lo/load-read-only-segment 102))
+          "segment should have been deleted from disk")
+      )))
