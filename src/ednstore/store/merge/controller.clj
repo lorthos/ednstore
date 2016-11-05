@@ -46,22 +46,24 @@
 
 (defn make-merge-func [old-segments]
   (fn []
-    (log/infof "Checking for merge..." (keys old-segments))
+    (log/infof "Checking for merge: %s" (keys @old-segments))
     (let [mergeable-ids
           (m/get-mergeable-segment-ids
-            old-segments
+            @old-segments
             (:merge-strategy e/props))]
       (if mergeable-ids
-        (merge! old-segments
-                (first mergeable-ids)
-                (next mergeable-ids))
+        (do
+          (log/infof "found segments to merge %s" mergeable-ids)
+          (merge! @old-segments
+                  (first mergeable-ids)
+                  (next mergeable-ids)))
         (log/infof "No candidates for segment merge ...")))))
 
-(defn make-merger-pool! [interval-sec segments-atom-map]
+(defn make-merger-pool! [interval-sec segments-map]
   (let [pool
-        (Executors/newScheduledThreadPool 2)]
+        (Executors/newScheduledThreadPool 1)]
     (log/infof "Starting merger thread...")
     (.scheduleAtFixedRate pool
-                          (make-merge-func segments-atom-map)
+                          (make-merge-func segments-map)
                           0 interval-sec TimeUnit/SECONDS)
     pool))

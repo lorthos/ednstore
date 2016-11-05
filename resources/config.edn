@@ -1,6 +1,6 @@
 {
  :path              "target/segments/"
- :segment-roll-size 1000000
- :merge-strategy     {:min-size 10000}
- :merge-trigger-interval-sec 1
+ :segment-roll-size 5000
+ :merge-strategy     {:min-size 10}
+ :merge-trigger-interval-sec 2
  }
