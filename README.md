@@ -5,6 +5,8 @@ Work in progress
 Embeddable key value store for Clojure, similar to bitcask & leveldb
 
 
+[![Build Status](https://travis-ci.org/lorthos/ednstore.png)](https://travis-ci.org/lorthos/ednstore.png)
+
 ## Usage
 
 FIXME
