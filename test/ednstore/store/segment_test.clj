@@ -15,9 +15,7 @@
 
 (deftest roll-new-segment-test
   (testing "adding a new segment and querying afterwards"
-    ;TODO
     (is (nil? @active-segment))
-    ;(is (nil? @old-segments))
     (is ((comp not nil?) (do
                            (roll-new-segment! 0)
                            @active-segment)))
