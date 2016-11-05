@@ -166,15 +166,31 @@
                 :old-offset 37
                 :op-type    41})
              (map #(into {} %) (make-oplog-for-new-segment @old-seg
-                                                           @new-seg)))
+                                                           @new-seg
+                                                           :filter-tombstones true)))
           "mergable oplog should only have 1 key (latest) since the other key has been deleted")
+
+      (is (= '({:from       :new
+                :key        "k1"
+                :new-offset 74
+                :old-offset 37
+                :op-type    41}
+                {:from       :new
+                 :key        "k2"
+                 :new-offset 92
+                 :old-offset 74
+                 :op-type    42})
+             (map #(into {} %) (make-oplog-for-new-segment @old-seg
+                                                           @new-seg)))
+          "mergable oplog should keep tombstones")
 
       (is (= {:key "k1"
               :val "v444"}
              (read-oplog-item (first
                                 (make-oplog-for-new-segment
                                   @old-seg
-                                  @new-seg))
+                                  @new-seg
+                                  :filter-tombstones true))
                               @old-seg
                               @new-seg))
 

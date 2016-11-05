@@ -1,6 +1,6 @@
 (ns ednstore.store.merger
   (:require [ednstore.store.segment :as s]
-            [ednstore.common :as c]
+            [ednstore.common :as c :refer [->opts]]
             [ednstore.store.reader :as r]
             [ednstore.store.writer :as w]
             [clojure.tools.logging :as log])
@@ -68,13 +68,20 @@
 
 
 (defn make-oplog-for-new-segment
-  "the oplog for the segment to be written does not need to contain the deletion marker?"
-  [old-segment new-segment]
-  (filter #(= 41 (:op-type %))
-          (cleanup-log
-            (make-merged-op-log
-              (r/segment->seq (:rc old-segment))
-              (r/segment->seq (:rc new-segment))))))
+  "the oplog for the segment to be written does not need to contain the deletion marker?
+  filtering out tombstones should only be done in the case that we are merging first 2 read-only segments
+  "
+  [old-segment new-segment & args]
+  (let [filter-tombstones? (:filter-tombstones (->opts args))
+        cleaned-log
+        (cleanup-log
+          (make-merged-op-log
+            (r/segment->seq (:rc old-segment))
+            (r/segment->seq (:rc new-segment))))]
+    (if filter-tombstones?
+      (filter #(= 41 (:op-type %))
+              cleaned-log)
+      cleaned-log)))
 
 (defn make-merge!
   "merge the two segments and return a new ReadOnlySegment
