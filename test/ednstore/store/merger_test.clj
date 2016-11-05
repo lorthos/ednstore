@@ -228,9 +228,18 @@
 (deftest merge-strategy-test
   (testing "merge streategy by size"
     (let [old-seg
-          (atom (lo/load-read-only-segment 600))
+          (atom (seg/make-new-segment! 600))
           new-seg
-          (atom (lo/load-read-only-segment 601))]
+          (atom (seg/make-new-segment! 601))]
+
+      (w/write! "k1" "v1" @old-seg)
+      (w/write! "k1" "v2" @old-seg)
+      (w/write! "k2" "v1" @old-seg)
+
+      (w/write! "k1" "v333" @new-seg)
+      (w/write! "k1" "v444" @new-seg)
+      (w/delete! "k2" @new-seg)
+
       (is (= nil
              (get-mergeable-segment-ids [@old-seg @new-seg] {:min-size 1000000})))
       (is (= [600 601]
