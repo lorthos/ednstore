@@ -12,10 +12,8 @@
            (java.io File)))
 
 (def exec
-  "Main write thread, all writes are sequential at this time"
+  "Main write thread, all writes are sequential"
   (Executors/newSingleThreadExecutor))
-
-
 
 (deftype SimpleDiskStore [] IKVStorage
   (insert! [this k v]

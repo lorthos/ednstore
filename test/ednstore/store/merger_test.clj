@@ -207,3 +207,16 @@
       (seg/close-segment! @new-seg)
 
       )))
+
+
+(deftest merge-strategy-test
+  (testing "merge streategy by size"
+    (let [old-seg
+          (atom (lo/load-read-only-segment 600))
+          new-seg
+          (atom (lo/load-read-only-segment 601))]
+      (is (= nil
+             (check-for-merge [@old-seg @new-seg] {:min-size 1000000})))
+      (is (= [600 601]
+             (map :id
+                  (check-for-merge [@old-seg @new-seg] {:min-size 10})))))))

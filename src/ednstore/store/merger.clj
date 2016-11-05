@@ -8,7 +8,9 @@
            (ednstore.store.segment ReadOnlySegment SegmentOperationLog)
            (java.nio.channels SeekableByteChannel WritableByteChannel)))
 
-(def merger-exec (Executors/newSingleThreadExecutor))
+(def merger-exec
+  "Main merge thread, merge operation is sequential at this time"
+  (Executors/newSingleThreadExecutor))
 
 (defn get-merge-candidate-ids
   "get the id of the segments to be merged
@@ -41,12 +43,12 @@
   [old-log new-log]
   (let [old-log
         (map #(assoc %
-               :from
-               :old) old-log)
+                :from
+                :old) old-log)
         new-log
         (map #(assoc %
-               :from
-               :new) new-log)]
+                :from
+                :new) new-log)]
     (concat old-log new-log)))
 
 (defn read-oplog-item
@@ -110,3 +112,19 @@
     (c/do-sequential merger-exec (make-merge! segment1 segment2))
     )
   )
+
+
+(defn check-for-merge
+  "executed periodically, triggers a merge if a merge is decided based on the current read-only segments.
+  Should not start a merge on the active segment
+  "
+  [old-segments merge-strategy]
+  (let [merge-candiates (take 2 old-segments)
+        merge-candiates-size (map #(.size (:rc %)) old-segments)]
+    (log/debugf "Old segments size : %s" (into [] merge-candiates-size))
+    (if (= 2
+           (count (filter #(<
+                             (:min-size merge-strategy)
+                             %)
+                          merge-candiates-size)))
+      merge-candiates)))

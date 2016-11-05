@@ -15,6 +15,7 @@ FIXME
 
 + loading test
 + segment merger
+- better merge policy, key to size ratio
 - performance & validation test
 - externalize serialization
 - benchmark
