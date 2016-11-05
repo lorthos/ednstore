@@ -4,6 +4,7 @@
             [ednstore.store.reader :as rdr]
             [ednstore.store.segment :as s]
             [ednstore.store.loader :as ldr]
+            [ednstore.store.merge.controller :as mcon]
             [ednstore.env :as e]
             [clojure.java.io :as io]
             [clojure.tools.logging :as log])
@@ -14,6 +15,9 @@
 (def exec
   "Main write thread, all writes are sequential"
   (Executors/newSingleThreadExecutor))
+
+(def merge-pool
+  (atom nil))
 
 (deftype SimpleDiskStore [] IKVStorage
   (insert! [this k v]
@@ -48,11 +52,19 @@
           (reset! s/active-segment active-segment)
           (reset! s/old-segments read-segments))
         (let [active-segment (s/roll-new-segment! 1000)]
-          (reset! s/active-segment active-segment)))))
+          (reset! s/active-segment active-segment))))
+    ;init the merger
+    (reset! merge-pool
+            (mcon/make-merger-pool! (:merge-trigger-interval-sec e/props)
+                                    s/old-segments))
+    )
 
   (stop!
     [this]
+    (log/infof "Shutting down db...")
+    (.shutdown @merge-pool)
     (dorun (map s/close-segment! (s/get-all-segments)))
     (reset! s/active-segment nil)
-    (reset! s/old-segments {})))
+    (reset! s/old-segments {})
+    ))
 

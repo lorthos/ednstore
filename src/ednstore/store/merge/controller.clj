@@ -4,12 +4,9 @@
             [ednstore.store.loader :as lo]
             [ednstore.store.merger :as m]
             [ednstore.common :as c]
-            [clojure.java.io :as io])
-  (:import (java.util.concurrent Executors)))
-
-(def merger-exec
-  "Main merge thread, merge operation is sequential at this time"
-  (Executors/newSingleThreadExecutor))
+            [clojure.java.io :as io]
+            [ednstore.env :as e])
+  (:import (java.util.concurrent Executors TimeUnit)))
 
 (defn delete-segment-from-disk!
   "given the segment id, load it as a read only segment"
@@ -46,3 +43,25 @@
         (delete-segment-from-disk! (:id segment1))
         (delete-segment-from-disk! (:id segment2))
         ))))
+
+(defn make-merge-func [old-segments]
+  (fn []
+    (log/infof "Checking for merge..." (keys old-segments))
+    (let [mergeable-ids
+          (m/get-mergeable-segment-ids
+            old-segments
+            (:merge-strategy e/props))]
+      (if mergeable-ids
+        (merge! old-segments
+                (first mergeable-ids)
+                (next mergeable-ids))
+        (log/infof "No candidates for segment merge ...")))))
+
+(defn make-merger-pool! [interval-sec segments-atom-map]
+  (let [pool
+        (Executors/newScheduledThreadPool 2)]
+    (log/infof "Starting merger thread...")
+    (.scheduleAtFixedRate pool
+                          (make-merge-func segments-atom-map)
+                          0 interval-sec TimeUnit/SECONDS)
+    pool))
