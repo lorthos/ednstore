@@ -3,27 +3,11 @@
             [ednstore.common :as c :refer [->opts]]
             [ednstore.store.reader :as r]
             [ednstore.store.writer :as w]
+            [ednstore.store.loader :as lo]
             [clojure.tools.logging :as log])
   (:import (java.util.concurrent Executors)
            (ednstore.store.segment ReadOnlySegment SegmentOperationLog)
            (java.nio.channels SeekableByteChannel WritableByteChannel)))
-
-(def merger-exec
-  "Main merge thread, merge operation is sequential at this time"
-  (Executors/newSingleThreadExecutor))
-
-(defn get-merge-candidate-ids
-  "get the id of the segments to be merged
-
-  1000 1001 1002 (1003)->
-  0 1002 (1003->
-  1 (1003)
-
-  "
-  [read-only-segments]
-  ;must have at least 2 active segments
-  (when (>= (count read-only-segments) 2)
-    (take 2 (sort < read-only-segments))))
 
 (defn cleanup-log
   "given a log sequence, reduce it in a way that we end up with the
@@ -110,28 +94,21 @@
     ;(.flush ^WritableByteChannel (:wc new-segment))
     (s/close-segment! new-segment)
     (log/debugf "segment after write: %s" (into {} new-segment))
-    ))
-
-(defn merge!
-  [older-segment-id newer-segment-id]
-  (let [segment1 (get @s/old-segments older-segment-id)
-        segment2 (get @s/old-segments newer-segment-id)]
-    (c/do-sequential merger-exec (make-merge! segment1 segment2))
-    )
-  )
-
+    (:id new-segment)))
 
 (defn get-mergeable-segment-ids
   "executed periodically, triggers a merge if a merge is decided based on the current read-only segments.
   Should not start a merge on the active segment
   "
   [old-segments merge-strategy]
-  (let [merge-candiates (take 2 old-segments)
-        merge-candiates-size (map #(.size (:rc %)) old-segments)]
-    (log/debugf "Old segments size : %s" (into [] merge-candiates-size))
+  (let [merge-candiates (take 2 (sort #(< (:id %1) (:id %2)) old-segments))
+        merge-candiates-size (map #(.size (:rc %)) merge-candiates)]
+    (log/debugf "merge-candiates : %s" (into [] merge-candiates))
+    (log/debugf "merge-candiates-size : %s" (into [] merge-candiates-size))
     (if (= 2
            (count (filter #(<
                              (:min-size merge-strategy)
                              %)
                           merge-candiates-size)))
       merge-candiates)))
+

@@ -4,19 +4,7 @@
             [ednstore.store.segment :as seg :refer :all]
             [ednstore.store.loader :as lo]
             [ednstore.store.writer :as w]
-            [ednstore.store.reader :as r]
-            [ednstore.env :as env]
-            [clojure.java.io :as io]))
-
-
-(deftest merge-candidates
-  (testing "get merge candidates"
-    (is (= '(1000 1001) (get-merge-candidate-ids '(1000 1001))))
-    (is (= '(1000 1001) (get-merge-candidate-ids '(1000 1001 1002))))
-    (is (= '(0 1002) (get-merge-candidate-ids '(0 1002))))
-    (is (nil? (get-merge-candidate-ids '(0))))
-    (is (nil? (get-merge-candidate-ids '(1002))))
-    ))
+            [ednstore.store.reader :as r]))
 
 (def log1
   [{:key        "A"
@@ -227,21 +215,25 @@
 
 (deftest merge-strategy-test
   (testing "merge streategy by size"
-    (let [old-seg
-          (atom (seg/make-new-segment! 600))
-          new-seg
-          (atom (seg/make-new-segment! 601))]
+    (let [seg1
+          (atom (seg/make-new-segment! 101))
+          seg2
+          (atom (seg/make-new-segment! 102))
+          seg3
+          (atom (seg/make-new-segment! 103))]
 
-      (w/write! "k1" "v1" @old-seg)
-      (w/write! "k1" "v2" @old-seg)
-      (w/write! "k2" "v1" @old-seg)
+      (w/write! "k1" "v1" @seg1)
+      (w/write! "k1" "v2" @seg1)
+      (w/write! "k2" "v1" @seg1)
 
-      (w/write! "k1" "v333" @new-seg)
-      (w/write! "k1" "v444" @new-seg)
-      (w/delete! "k2" @new-seg)
+      (w/write! "k1" "v333" @seg2)
+      (w/write! "k1" "v444" @seg2)
+      (w/delete! "k2" @seg2)
+
+      (w/write! "k3" "v555" @seg3)
 
       (is (= nil
-             (get-mergeable-segment-ids [@old-seg @new-seg] {:min-size 1000000})))
-      (is (= [600 601]
+             (get-mergeable-segment-ids [@seg1 @seg2 @seg3] {:min-size 1000000})))
+      (is (= [101 102]
              (map :id
-                  (get-mergeable-segment-ids [@old-seg @new-seg] {:min-size 10})))))))
+                  (get-mergeable-segment-ids [@seg1 @seg2 @seg3] {:min-size 10})))))))
