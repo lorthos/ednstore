@@ -1,4 +1,4 @@
-# cljtable
+# ednstore
 
 Work in progress
 

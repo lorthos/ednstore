@@ -1,9 +1,9 @@
-(ns cljtable.load-test
+(ns ednstore.load-test
   (:require [clojure.test :refer :all]
-            [cljtable.common :refer :all]
-            [cljtable.core :refer :all]
-            [cljtable.env :as e])
-  (:import (cljtable.core SimpleDiskStore)))
+            [ednstore.common :refer :all]
+            [ednstore.core :refer :all]
+            [ednstore.env :as e])
+  (:import (ednstore.core SimpleDiskStore)))
 
 (def S (atom nil))
 

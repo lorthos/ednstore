@@ -1,10 +1,10 @@
-(ns cljtable.store.reader
-  (:require [cljtable.store.segment :as s :refer :all]
-            [cljtable.io.core :as io]
+(ns ednstore.store.reader
+  (:require [ednstore.store.segment :as s :refer :all]
+            [ednstore.io.core :as io]
             [clojure.tools.logging :as log])
   (:import (java.nio.channels SeekableByteChannel)
            (java.util Iterator)
-           (cljtable.store.segment SegmentOperationLog)))
+           (ednstore.store.segment SegmentOperationLog)))
 
 (defn read-kv
   "read the next key value pair starting with the given offset from the channel"

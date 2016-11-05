@@ -1,8 +1,8 @@
-(ns cljtable.store.writer
+(ns ednstore.store.writer
   (:require [nio.core :as nio]
-            [cljtable.store.segment]
-            [cljtable.serialization.core :as ser])
-  (:import (cljtable.store.segment ActiveSegment)))
+            [ednstore.store.segment]
+            [ednstore.serialization.core :as ser])
+  (:import (ednstore.store.segment ActiveSegment)))
 
 (defn write!
   "write to the active segment only, should not write to an inactive segment

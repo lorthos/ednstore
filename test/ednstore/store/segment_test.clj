@@ -1,8 +1,8 @@
-(ns cljtable.store.segment-test
+(ns ednstore.store.segment-test
   (:require [clojure.test :refer :all]
-            [cljtable.store.segment :refer :all]
-            [cljtable.store.writer :as w]
-            [cljtable.store.reader :as r]))
+            [ednstore.store.segment :refer :all]
+            [ednstore.store.writer :as w]
+            [ednstore.store.reader :as r]))
 
 (defn segment-fixture [f]
   (reset! active-segment nil)

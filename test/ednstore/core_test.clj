@@ -1,11 +1,11 @@
-(ns cljtable.core-test
+(ns ednstore.core-test
   (:require [clojure.test :refer :all]
-            [cljtable.common :refer :all]
-            [cljtable.core :refer :all]
-            [cljtable.store.segment :as s]
-            [cljtable.store.reader :as r]
-            [cljtable.env :as e])
-  (:import (cljtable.core SimpleDiskStore)))
+            [ednstore.common :refer :all]
+            [ednstore.core :refer :all]
+            [ednstore.store.segment :as s]
+            [ednstore.store.reader :as r]
+            [ednstore.env :as e])
+  (:import (ednstore.core SimpleDiskStore)))
 
 (def S (atom nil))
 

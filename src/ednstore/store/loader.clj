@@ -1,8 +1,8 @@
-(ns cljtable.store.loader
-  (:require [cljtable.common :as c]
-            [cljtable.store.segment :as s :refer :all]
+(ns ednstore.store.loader
+  (:require [ednstore.common :as c]
+            [ednstore.store.segment :as s :refer :all]
             [nio.core :as nio]
-            [cljtable.io.core :as io])
+            [ednstore.io.core :as io])
   (:import (java.nio.channels SeekableByteChannel)))
 
 (defn read-next-key-and-offset-and-increment!

@@ -1,4 +1,4 @@
-(ns cljtable.env
+(ns ednstore.env
   "Application properties"
   (:import (java.io PushbackReader))
   (:require [clojure.java.io :as io]))
@@ -9,7 +9,7 @@
       (read (PushbackReader. r)))))
 
 (def config-path (or
-                   (System/getProperty "cljtable.config.path")
+                   (System/getProperty "ednstore.config.path")
                    "./resources/config.edn"))
 
 (def ^:dynamic props (load-props (-> config-path io/file)))

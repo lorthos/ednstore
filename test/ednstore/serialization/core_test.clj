@@ -1,6 +1,6 @@
-(ns cljtable.serialization.core-test
+(ns ednstore.serialization.core-test
   (:require [clojure.test :refer :all]
-            [cljtable.serialization.core :refer :all]))
+            [ednstore.serialization.core :refer :all]))
 
 
 (deftest wire-format-test

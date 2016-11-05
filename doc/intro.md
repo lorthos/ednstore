@@ -1,4 +1,4 @@
-# Introduction to cljtable
+# Introduction to ednstore
 - Writes Are sequential and single threaded
 - All writes are done against the active segment
 - Active segment is finalized after some predicate holds true

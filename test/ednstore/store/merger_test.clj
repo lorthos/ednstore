@@ -1,11 +1,11 @@
-(ns cljtable.store.merger-test
+(ns ednstore.store.merger-test
   (:require [clojure.test :refer :all]
-            [cljtable.store.merger :refer :all]
-            [cljtable.store.segment :as seg :refer :all]
-            [cljtable.store.loader :as lo]
-            [cljtable.store.writer :as w]
-            [cljtable.store.reader :as r]
-            [cljtable.env :as env]
+            [ednstore.store.merger :refer :all]
+            [ednstore.store.segment :as seg :refer :all]
+            [ednstore.store.loader :as lo]
+            [ednstore.store.writer :as w]
+            [ednstore.store.reader :as r]
+            [ednstore.env :as env]
             [clojure.java.io :as io]))
 
 

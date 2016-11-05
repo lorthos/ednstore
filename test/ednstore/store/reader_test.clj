@@ -1,8 +1,8 @@
-(ns cljtable.store.reader-test
+(ns ednstore.store.reader-test
   (:require [clojure.test :refer :all]
-            [cljtable.store.reader :refer :all]
-            [cljtable.store.segment :as s :refer :all]
-            [cljtable.store.writer :as wrt]))
+            [ednstore.store.reader :refer :all]
+            [ednstore.store.segment :as s :refer :all]
+            [ednstore.store.writer :as wrt]))
 
 
 

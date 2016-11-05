@@ -1,9 +1,9 @@
-(ns cljtable.store.segment
+(ns ednstore.store.segment
   "all segment management is handled here,
   additional logic about merging should be handled here"
   (:require
     [nio.core :as nio]
-    [cljtable.common :as c])
+    [ednstore.common :as c])
   (:import (java.nio.channels WritableByteChannel SeekableByteChannel)))
 
 (defonce old-segments (atom {}))

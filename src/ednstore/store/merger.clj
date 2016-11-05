@@ -1,11 +1,11 @@
-(ns cljtable.store.merger
-  (:require [cljtable.store.segment :as s]
-            [cljtable.common :as c]
-            [cljtable.store.reader :as r]
-            [cljtable.store.writer :as w]
+(ns ednstore.store.merger
+  (:require [ednstore.store.segment :as s]
+            [ednstore.common :as c]
+            [ednstore.store.reader :as r]
+            [ednstore.store.writer :as w]
             [clojure.tools.logging :as log])
   (:import (java.util.concurrent Executors)
-           (cljtable.store.segment ReadOnlySegment SegmentOperationLog)
+           (ednstore.store.segment ReadOnlySegment SegmentOperationLog)
            (java.nio.channels SeekableByteChannel WritableByteChannel)))
 
 (def merger-exec (Executors/newSingleThreadExecutor))

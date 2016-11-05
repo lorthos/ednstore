@@ -1,13 +1,13 @@
-(ns cljtable.core
-  (:require [cljtable.common :as c]
-            [cljtable.store.writer :as wrt]
-            [cljtable.store.reader :as rdr]
-            [cljtable.store.segment :as s]
-            [cljtable.store.loader :as ldr]
-            [cljtable.env :as e]
+(ns ednstore.core
+  (:require [ednstore.common :as c]
+            [ednstore.store.writer :as wrt]
+            [ednstore.store.reader :as rdr]
+            [ednstore.store.segment :as s]
+            [ednstore.store.loader :as ldr]
+            [ednstore.env :as e]
             [clojure.java.io :as io]
             [clojure.tools.logging :as log])
-  (:refer cljtable.common :only [IKVStorage])
+  (:refer ednstore.common :only [IKVStorage])
   (:import (java.util.concurrent Executors)
            (java.io File)))
 

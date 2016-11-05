@@ -1,7 +1,7 @@
-(ns cljtable.store.writer-test
+(ns ednstore.store.writer-test
   (:require [clojure.test :refer :all]
-            [cljtable.store.writer :refer :all]
-            [cljtable.store.segment :as seg]))
+            [ednstore.store.writer :refer :all]
+            [ednstore.store.segment :as seg]))
 
 (def segment (atom nil))
 

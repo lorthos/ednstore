@@ -1,6 +1,6 @@
-(ns cljtable.io.core
+(ns ednstore.io.core
   "reads serialization format from underlying channel"
-  (:require [cljtable.serialization.core :as ser])
+  (:require [ednstore.serialization.core :as ser])
   (:import (java.nio.channels SeekableByteChannel)
            (java.nio ByteBuffer)))
 

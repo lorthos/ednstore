@@ -1,6 +1,6 @@
-(ns cljtable.common
+(ns ednstore.common
   (:require [clojure.java.io :as io]
-            [cljtable.env :as e]))
+            [ednstore.env :as e]))
 
 
 (defprotocol IKVStorage

@@ -1,4 +1,4 @@
-(ns cljtable.serialization.core
+(ns ednstore.serialization.core
   "serialization of key and value pairs"
   (:require [taoensso.nippy :as nippy])
   (:import (java.io ByteArrayOutputStream)
