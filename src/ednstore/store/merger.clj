@@ -121,7 +121,7 @@
   )
 
 
-(defn check-for-merge
+(defn get-mergeable-segment-ids
   "executed periodically, triggers a merge if a merge is decided based on the current read-only segments.
   Should not start a merge on the active segment
   "
