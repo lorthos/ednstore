@@ -233,7 +233,11 @@
       (w/write! "k3" "v555" @seg3)
 
       (is (= nil
-             (get-mergeable-segment-ids [@seg1 @seg2 @seg3] {:min-size 1000000})))
+             (get-mergeable-segments {101 @seg1
+                                         102 @seg2
+                                         103 @seg3} {:min-size 1000000})))
       (is (= [101 102]
              (map :id
-                  (get-mergeable-segment-ids [@seg1 @seg2 @seg3] {:min-size 10})))))))
+                  (get-mergeable-segments {101 @seg1
+                                              102 @seg2
+                                              103 @seg3} {:min-size 10})))))))

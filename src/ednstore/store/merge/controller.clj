@@ -6,7 +6,8 @@
             [ednstore.common :as c]
             [clojure.java.io :as io]
             [ednstore.env :as e])
-  (:import (java.util.concurrent Executors TimeUnit)))
+  (:import (java.util.concurrent Executors TimeUnit)
+           (clojure.lang Atom)))
 
 (defn delete-segment-from-disk!
   "given the segment id, load it as a read only segment"
@@ -18,10 +19,15 @@
 (defn merge!
   "merge 2 segments by
   active new segment and dropping old segments"
-  [segments-map-atom older-segment-id newer-segment-id]
+  [^Atom segments-map-atom
+   ^Number older-segment-id
+   ^Number newer-segment-id]
+  (log/infof "Start merge! old-segment: %s and new-segment: %s with status: %s ..."
+             older-segment-id
+             newer-segment-id
+             @segments-map-atom)
   (let [segment1 (get @segments-map-atom older-segment-id)
         segment2 (get @segments-map-atom newer-segment-id)]
-    (log/infof "Start segment merge %s and %s ..." segment1 segment2)
     ;TODO background (c/do-sequential merger-exec)
     (let [merged-segment-id
           (m/make-merge! segment1 segment2)]
@@ -46,18 +52,23 @@
 
 (defn make-merge-func [old-segments]
   (fn []
-    (log/infof "Checking for merge: %s" (keys @old-segments))
-    (let [mergeable-ids
-          (m/get-mergeable-segment-ids
-            @old-segments
-            (:merge-strategy e/props))]
-      (if mergeable-ids
-        (do
-          (log/infof "found segments to merge %s" mergeable-ids)
-          (merge! @old-segments
-                  (first mergeable-ids)
-                  (next mergeable-ids)))
-        (log/infof "No candidates for segment merge ...")))))
+    (try
+      (do
+        (log/infof "Checking for merge: %s" (keys @old-segments))
+        (let [mergeables
+              (m/get-mergeable-segments
+                @old-segments
+                (:merge-strategy e/props))]
+          (if mergeables
+            (do
+              (log/infof "Found mergeable segments: %s" mergeables)
+              (merge! old-segments
+                      (:id (first mergeables))
+                      (:id (second mergeables))))
+            (log/infof "No candidates for segment merge ..."))))
+      (catch Exception e
+        (log/errorf "Error in merger!: %s" (.getMessage e))
+        (.printStackTrace e)))))
 
 (defn make-merger-pool! [interval-sec segments-map]
   (let [pool

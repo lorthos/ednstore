@@ -2,12 +2,14 @@
   (:require [clojure.test :refer :all]
             [ednstore.common :refer :all]
             [ednstore.core :refer :all]
-            [ednstore.env :as e])
+            [ednstore.env :as e]
+            [clojure.java.io :as io])
   (:import (ednstore.core SimpleDiskStore)))
 
 (def S (atom nil))
 
 (defn segment-fixture [f]
+  ;(io/delete-file (:path e/props))
   (reset! S (SimpleDiskStore.))
   (initialize! @S e/props)
   (f)

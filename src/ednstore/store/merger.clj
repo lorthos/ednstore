@@ -56,6 +56,8 @@
   filtering out tombstones should only be done in the case that we are merging first 2 read-only segments
   "
   [old-segment new-segment & args]
+  (log/debugf "Create oplog for old segment %s and new segment %s with args %s"
+              old-segment new-segment (->opts args))
   (let [filter-tombstones? (:filter-tombstones (->opts args))
         cleaned-log
         (cleanup-log
@@ -73,9 +75,12 @@
   Will run in a seperate single background thread"
   [^ReadOnlySegment older-segment
    ^ReadOnlySegment newer-segment]
+  (log/debugf "Make-merge! oold-segment %s new-segment %s"
+              older-segment
+              newer-segment)
   (let [oplog (make-oplog-for-new-segment older-segment
                                           newer-segment)
-        new-segment (s/make-new-segment! 666)]
+        new-segment (s/make-new-segment! (dec (:id older-segment)))]
     (log/debugf "Read Oplog: %s" (into [] oplog))
     (log/debugf "segment created: %s" (into {} new-segment))
     (dorun
@@ -96,12 +101,15 @@
     (log/debugf "segment after write: %s" (into {} new-segment))
     (:id new-segment)))
 
-(defn get-mergeable-segment-ids
+(defn get-mergeable-segments
   "executed periodically, triggers a merge if a merge is decided based on the current read-only segments.
   Should not start a merge on the active segment
   "
   [old-segments merge-strategy]
-  (let [merge-candiates (take 2 (sort #(< (:id %1) (:id %2)) old-segments))
+  (log/infof "Looking for mergeable segments in:  %s with strategy: %s"
+             (keys old-segments)
+             merge-strategy)
+  (let [merge-candiates (take 2 (sort #(< (:id %1) (:id %2)) (vals old-segments)))
         merge-candiates-size (map #(.size (:rc %)) merge-candiates)]
     (log/debugf "merge-candiates : %s" (into [] merge-candiates))
     (log/debugf "merge-candiates-size : %s" (into [] merge-candiates-size))
@@ -110,5 +118,5 @@
                              (:min-size merge-strategy)
                              %)
                           merge-candiates-size)))
-      merge-candiates)))
+      (into [] merge-candiates))))
 

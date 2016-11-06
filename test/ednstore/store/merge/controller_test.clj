@@ -40,7 +40,7 @@
                                103 @seg3})]
         (merge! segment-map 101 102)
         (println "***" @segment-map)
-        (is (= '(103 666)
+        (is (= '(103 100)
                (map :id
                     (vals @segment-map)))
             "old segments should be dropped and merged segment should be present"
