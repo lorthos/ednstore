@@ -2,7 +2,7 @@
   (:require
     [ednstore.store.segment]
     [ednstore.serialization.core :as ser]
-    [ednstore.io.core :refer :all]
+    [ednstore.io.read :refer :all]
     [ednstore.io.write :as w])
   (:import (ednstore.store.segment ActiveSegment)))
 

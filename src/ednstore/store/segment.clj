@@ -3,7 +3,7 @@
   additional logic about merging should be handled here"
   (:require
     [ednstore.common :as c]
-    [ednstore.io.core :refer :all]
+    [ednstore.io.read :refer :all]
     [ednstore.io.write :as w]))
 
 (defonce old-segments (atom {}))

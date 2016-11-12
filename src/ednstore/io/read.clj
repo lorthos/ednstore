@@ -1,4 +1,4 @@
-(ns ednstore.io.core
+(ns ednstore.io.read
   "reads serialization format from underlying channel"
   (:require [ednstore.serialization.core :as ser]
             [nio.core :as nio])

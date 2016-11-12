@@ -1,7 +1,8 @@
 (ns ednstore.store.loader
   (:require [ednstore.common :as c]
             [ednstore.store.segment :refer :all]
-            [ednstore.io.core :refer :all]))
+            [ednstore.io.read :refer :all]
+            [ednstore.store.reader :as rdr]))
 
 (defn read-next-key-and-offset-and-increment!
   "given a channel that is at the end position of a record (or at the beginning of the file)
@@ -12,21 +13,9 @@
   5. reads the value
   6. calculates total bytes read returns the key and new offset"
   [chan offset-atom]
-  ;TODO skip instead of read?
-  (let [old-offset @offset-atom
-        kl (read-int!! chan)
-        k (read-wire-format!! chan kl)
-        op_type (read-byte!! chan)]
-    (if (= op_type (byte 41))
-      (let [vl (read-int!! chan)
-            v (read-wire-format!! chan vl)]
-        (do
-          (swap! offset-atom + 4 kl 1 4 vl)
-          {:key k :old-offset old-offset :new-offset @offset-atom}))
-      (do
-        (swap! offset-atom + 4 kl 1)
-        {:key k :old-offset old-offset :new-offset @offset-atom})
-      )))
+  (let [block (rdr/read-block! chan @offset-atom)]
+    (reset! offset-atom (:new-offset block))
+    (dissoc block :value :op-type)))
 
 (defn append-next-line-to-index!
   "given an index in the atom, append the read result to the index and return the latest offset"

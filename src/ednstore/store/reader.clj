@@ -1,10 +1,24 @@
 (ns ednstore.store.reader
   (:require [ednstore.store.segment :as s :refer :all]
-            [ednstore.io.core :refer :all]
+            [ednstore.io.read :refer :all]
             [clojure.tools.logging :as log])
   (:import
     (java.util Iterator)
     (ednstore.store.segment SegmentOperationLog)))
+
+(defn read-block! [chan
+                   start-offset]
+  (let [kl (read-int!! chan)
+        k (read-wire-format!! chan kl)
+        op_type (read-byte!! chan)]
+    (if (= op_type (byte 41))
+      (let [vl (read-int!! chan)
+            v (read-wire-format!! chan vl)]
+        {:key     k :old-offset start-offset :new-offset (+ start-offset 4 kl 1 4 vl)
+         :op-type op_type
+         :value   v})
+      {:key     k :old-offset start-offset :new-offset (+ start-offset 4 kl 1)
+       :op-type op_type})))
 
 (defn read-kv
   "read the next key value pair starting with the given offset from the channel"
@@ -12,14 +26,9 @@
   (do
     (log/debugf "seek to position %s for channel: %s" offset chan)
     (position!! chan offset)
-    (let [kl (read-int!! chan)
-          k (read-wire-format!! chan kl)
-          op_type (read-byte!! chan)]
-      (log/debugf "Read key length: %s key: %s op-type: %s" kl k op_type)
-      (if (= op_type (byte 41))
-        (let [vl (read-int!! chan)
-              v (read-wire-format!! chan vl)]
-          {:key k :val v})))))
+    (let [block (read-block! chan offset)]
+      (if (= (:op-type block) (byte 41))
+        {:key (:key block) :val (:value block)}))))
 
 (defn read-direct
   "should only read values that are not deleted
@@ -61,23 +70,9 @@
   5. reads the value
   6. calculates total bytes read returns the key and new offset"
   [chan offset-atom]
-  (let [old-offset @offset-atom
-        kl (read-int!! chan)
-        k (read-wire-format!! chan kl)
-        op_type (read-byte!! chan)]
-    (if (= op_type (byte 41))
-      (let [vl (read-int!! chan)
-            v (read-wire-format!! chan vl)]
-        (do
-          (swap! offset-atom + 4 kl 1 4 vl)
-          (map->SegmentOperationLog
-            {:key     k :old-offset old-offset :new-offset @offset-atom
-             :op-type op_type})))
-      (do
-        (swap! offset-atom + 4 kl 1)
-        (map->SegmentOperationLog
-          {:key     k :old-offset old-offset :new-offset @offset-atom
-           :op-type op_type})))))
+  (let [block (read-block! chan @offset-atom)]
+    (reset! offset-atom (:new-offset block))
+    (dissoc block :value)))
 
 (defn segment->seq
   "return a lazy sequence of operations

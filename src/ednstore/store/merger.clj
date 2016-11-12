@@ -4,7 +4,7 @@
             [ednstore.store.reader :as r]
             [ednstore.store.writer :as w]
             [clojure.tools.logging :as log]
-            [ednstore.io.core :refer :all])
+            [ednstore.io.read :refer :all])
   (:import (ednstore.store.segment ReadOnlySegment SegmentOperationLog)))
 
 (defn cleanup-log
