@@ -25,7 +25,7 @@
   [namespace id]
   (let [root-path (:path e/props)
         ns-root (str root-path namespace)
-        file (io/file (str ns-root File/pathSeparator id ".tbl"))]
+        file (io/file (str ns-root File/separator id ".tbl"))]
     (io/make-parents file)
     file))
 

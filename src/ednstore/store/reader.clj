@@ -1,7 +1,8 @@
 (ns ednstore.store.reader
   (:require [ednstore.store.segment :as s :refer :all]
             [ednstore.io.read :refer :all]
-            [clojure.tools.logging :as log])
+            [clojure.tools.logging :as log]
+            [ednstore.store.metadata :as md])
   (:import
     (java.util Iterator)
     (ednstore.store.segment SegmentOperationLog)))
@@ -49,10 +50,10 @@
 
 (defn read-all
   "search for the given key across all indexes of all segments"
-  [k]
-  (if (nil? @s/active-segment)
+  [namespace k]
+  (if (nil? (md/get-active-segment-for-namespace namespace))
     (throw (RuntimeException. "active segment is null!")))
-  (let [all-segments (s/get-all-segments)
+  (let [all-segments (md/get-all-segments namespace)
         target-segment (first (filter #(segment-has-key? k %) all-segments))]
     (if target-segment
       (read-direct k target-segment)
