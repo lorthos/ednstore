@@ -36,7 +36,7 @@
 (defn close-segment! [segment]
   (if (:wc segment)
     (close-write! (:wc segment)))
-  (close-read! (:rc segment)))
+  (close-read!! (:rc segment)))
 
 (defn roll-new-segment!
   "roll a new segment on the filesystem,

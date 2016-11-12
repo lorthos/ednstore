@@ -14,12 +14,12 @@
   [chan offset-atom]
   ;TODO skip instead of read?
   (let [old-offset @offset-atom
-        kl (read-int chan)
-        k (read-wire-format chan kl)
-        op_type (read-byte chan)]
+        kl (read-int!! chan)
+        k (read-wire-format!! chan kl)
+        op_type (read-byte!! chan)]
     (if (= op_type (byte 41))
-      (let [vl (read-int chan)
-            v (read-wire-format chan vl)]
+      (let [vl (read-int!! chan)
+            v (read-wire-format!! chan vl)]
         (do
           (swap! offset-atom + 4 kl 1 4 vl)
           {:key k :old-offset old-offset :new-offset @offset-atom}))
@@ -39,9 +39,9 @@
   1. position the chan to the beginning offset
   2. read and assoc accordingly"
   [chan]
-  (position chan 0)
+  (position!! chan 0)
   (let [offset-atom (atom 0)
-        end (size chan)
+        end (size!! chan)
         index (atom {})]
     (loop [current 0]
       (if (= current end)

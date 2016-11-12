@@ -3,9 +3,9 @@
             [ednstore.common :refer [->opts]]
             [ednstore.store.reader :as r]
             [ednstore.store.writer :as w]
-            [clojure.tools.logging :as log])
-  (:import (ednstore.store.segment ReadOnlySegment SegmentOperationLog)
-           (java.nio.channels SeekableByteChannel)))
+            [clojure.tools.logging :as log]
+            [ednstore.io.core :refer :all])
+  (:import (ednstore.store.segment ReadOnlySegment SegmentOperationLog)))
 
 (defn cleanup-log
   "given a log sequence, reduce it in a way that we end up with the
@@ -40,7 +40,7 @@
    old-segment
    new-segment]
   (log/debugf "reading oplog item from disk: %s" oplog)
-  (let [^SeekableByteChannel source-chan
+  (let [source-chan
         (if (= :old (:from oplog))
           (:rc old-segment)
           (:rc new-segment))
@@ -108,7 +108,7 @@
              (keys old-segments)
              merge-strategy)
   (let [merge-candiates (take 2 (sort #(< (:id %1) (:id %2)) (vals old-segments)))
-        merge-candiates-size (map #(.size (:rc %)) merge-candiates)]
+        merge-candiates-size (map #(size!! (:rc %)) merge-candiates)]
     (log/debugf "merge-candiates : %s" (into [] merge-candiates))
     (log/debugf "merge-candiates-size : %s" (into [] merge-candiates-size))
     (if (= 2

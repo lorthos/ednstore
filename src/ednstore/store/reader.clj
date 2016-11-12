@@ -11,14 +11,14 @@
   [chan offset]
   (do
     (log/debugf "seek to position %s for channel: %s" offset chan)
-    (position chan offset)
-    (let [kl (read-int chan)
-          k (read-wire-format chan kl)
-          op_type (read-byte chan)]
+    (position!! chan offset)
+    (let [kl (read-int!! chan)
+          k (read-wire-format!! chan kl)
+          op_type (read-byte!! chan)]
       (log/debugf "Read key length: %s key: %s op-type: %s" kl k op_type)
       (if (= op_type (byte 41))
-        (let [vl (read-int chan)
-              v (read-wire-format chan vl)]
+        (let [vl (read-int!! chan)
+              v (read-wire-format!! chan vl)]
           {:key k :val v})))))
 
 (defn read-direct
@@ -62,12 +62,12 @@
   6. calculates total bytes read returns the key and new offset"
   [chan offset-atom]
   (let [old-offset @offset-atom
-        kl (read-int chan)
-        k (read-wire-format chan kl)
-        op_type (read-byte chan)]
+        kl (read-int!! chan)
+        k (read-wire-format!! chan kl)
+        op_type (read-byte!! chan)]
     (if (= op_type (byte 41))
-      (let [vl (read-int chan)
-            v (read-wire-format chan vl)]
+      (let [vl (read-int!! chan)
+            v (read-wire-format!! chan vl)]
         (do
           (swap! offset-atom + 4 kl 1 4 vl)
           (map->SegmentOperationLog
@@ -86,9 +86,9 @@
   will read evey operation including the deletion markers,
   does not read the value"
   [read-channel]
-  (position read-channel 0)
+  (position!! read-channel 0)
   (let [current (atom 0)
-        end (size read-channel)]
+        end (size!! read-channel)]
     (iterator-seq
       (reify Iterator
         (hasNext [this] (< @current end))

@@ -7,35 +7,35 @@
 
 
 (defprotocol ReadChannel
-  (position [this offset])
-  (read-byte [this])
-  (read-int [this])
-  (read-wire-format [this length])
-  (size [this])
-  (close-read! [this]))
+  (position!! [this offset])
+  (read-byte!! [this])
+  (read-int!! [this])
+  (read-wire-format!! [this length])
+  (size!! [this])
+  (close-read!! [this]))
 
 
 (deftype NIOReadChannel [^SeekableByteChannel chan]
   ReadChannel
-  (position [this offset]
+  (position!! [this offset]
     (.position chan offset))
-  (read-byte [this]
+  (read-byte!! [this]
     (let [buf (ByteBuffer/allocate 1)]
       (.read chan buf)
       (.flip buf)
       (.get buf)))
-  (read-int [this]
+  (read-int!! [this]
     (let [buf (ByteBuffer/allocate 4)]
       (.read chan buf)
       (.flip buf)
       (.getInt buf)))
-  (read-wire-format [this length]
+  (read-wire-format!! [this length]
     (let [buf (ByteBuffer/allocate length)]
       (.read chan buf)
       (ser/wire->field (.array buf))))
-  (size [this]
+  (size!! [this]
     (.size chan))
-  (close-read! [this]
+  (close-read!! [this]
     (.close chan)))
 
 (defprotocol WriteChannel
