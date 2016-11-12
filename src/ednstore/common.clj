@@ -8,9 +8,9 @@
   (initialize! [this config])
   (stop! [this])
 
-  (insert! [this k v])
-  (delete! [this k])
-  (lookup [this k]))
+  (insert! [this namespace k v])
+  (delete! [this namespace k])
+  (lookup [this namespace k]))
 
 (defmacro do-sequential
   "submit the expression to the sequential executor"

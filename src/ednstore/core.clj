@@ -7,7 +7,8 @@
             [ednstore.store.merge.controller :as mcon]
             [ednstore.env :as e]
             [clojure.java.io :as io]
-            [clojure.tools.logging :as log])
+            [clojure.tools.logging :as log]
+            [ednstore.store.metadata :as md])
   (:refer ednstore.common :only [IKVStorage])
   (:import (java.util.concurrent Executors TimeUnit)
            (java.io File)))
@@ -20,27 +21,28 @@
   (atom nil))
 
 (deftype SimpleDiskStore [] IKVStorage
-  (insert! [this k v]
-    (if (< @(:last-offset @s/active-segment)
+  (insert! [this namespace k v]
+    (if (< @(:last-offset (md/get-active-segment-for-namespace namespace))
            (:segment-roll-size e/props))
       (c/do-sequential @exec-pool
-                       (wrt/write! k v @s/active-segment))
+                       (wrt/write! namespace k v))
       (do
-        (log/infof "Segment: %s has reached max size, rolling new" (:id @s/active-segment))
-        (s/roll-new-segment! (inc (:id @s/active-segment)))
-        )))
+        (log/infof "Segment: %s has reached max size, rolling new"
+                   (:id (md/get-active-segment-for-namespace namespace)))
+        (s/roll-new-segment! namespace
+                             (inc (:id (md/get-active-segment-for-namespace namespace)))))))
 
-  (delete! [this k]
+  (delete! [this namespace k]
     (c/do-sequential @exec-pool
-                     (wrt/delete! k @s/active-segment)))
+                     (wrt/delete! namespace k)))
 
   (lookup
-    [this k]
-    (rdr/read-all k))
+    [this namespace k]
+    (rdr/read-all namespace k))
 
   (initialize! [this c]
     (.mkdir (io/file (:path c)))
-    ;TODO check for clean init
+    ;TODO for each ns at this level do the following
     (let [segment-ids (->> (:path c)
                            clojure.java.io/file
                            file-seq
@@ -69,8 +71,8 @@
     (.awaitTermination @merge-pool 1 TimeUnit/MINUTES)
     (.shutdown @exec-pool)
     (.awaitTermination @exec-pool 1 TimeUnit/MINUTES)
-    (dorun (map s/close-segment! (s/get-all-segments)))
-    (reset! s/active-segment nil)
-    (reset! s/old-segments {})
-    ))
+    (dorun (map s/close-segment! (flatten
+                                   (map
+                                     md/get-all-segments
+                                     (md/get-namespaces)))))))
 

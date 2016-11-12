@@ -5,7 +5,8 @@
     [ednstore.common :as c]
     [ednstore.io.read :refer :all]
     [ednstore.io.write :as w]
-    [ednstore.store.metadata :as md]))
+    [ednstore.store.metadata :as md]
+    [clojure.tools.logging :as log]))
 
 (defrecord ActiveSegment
   [id index last-offset
@@ -49,17 +50,20 @@
   (md/create-ns-metadata! namespace)
   (let [new-segment (make-new-segment! namespace id)
         old-active (md/get-active-segment-for-namespace namespace)]
+    ;first redirect the writes
     ;point to new active segment
-    (if old-active
+    (md/set-active-segment-for-ns! namespace new-segment)
+    (log/debugf "rolled new segment, old active was %s" old-active)
+    (when old-active
       (let [old-id (:id old-active)]
-        ;first redirect the writes
-        (md/set-active-segment-for-ns! namespace new-segment)
+
         ;close the old active segment
         (w/close!! (:wc old-active))
-
+        (log/debugf "old segments before roll: %s" (md/get-old-segments namespace))
         (md/add-old-segment-for-ns! namespace old-id
                                     (map->ReadOnlySegment {:id    old-id
                                                            :index (:index old-active)
-                                                           :rc    (:rc old-active)})))
-      (md/set-active-segment-for-ns! namespace new-segment)))
-  (md/get-active-segment-for-namespace namespace))
+                                                           :rc    (:rc old-active)}))
+        (log/debugf "old segments after roll: %s" (md/get-old-segments namespace))))
+    (md/get-active-segment-for-namespace namespace))
+  )
