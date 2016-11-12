@@ -15,31 +15,20 @@
   2.update increment last offset
   3.write
   "
+  ;TODO should be atomic
   [k v ^ActiveSegment segment]
-  (let [key (ser/field->wire k)
-        val (ser/field->wire v)
-        barray (ser/create-append-log key val)
-        append-offset-length (alength barray)]
-
-    ;TODO should be atomic
+  (let [append-offset-length (w/write-pair!! (:wc segment) k v)]
     (swap! (:index segment) assoc k @(:last-offset segment))
-    (swap! (:last-offset segment) + append-offset-length)
-    (w/write!! (:wc segment) barray)
-    )
-  )
+    (swap! (:last-offset segment) + append-offset-length)))
 
 (defn delete!
   "write to log with the delete marker
   1.append to file
   2.update index
   3.append segment offset counter"
+  ;TODO should be atomic
   [k ^ActiveSegment segment]
-  (let [barray (ser/create-tombstone-log (ser/field->wire k))
-        append-offset-length (alength barray)]
-    ;TODO atomic
+  (let [append-offset-length (w/delete-key!! (:wc segment) k)]
     (swap! (:index segment) assoc k @(:last-offset segment))
-    (swap! (:last-offset segment) + append-offset-length)
-    (w/write!! (:wc segment) barray)
-    )
-  )
+    (swap! (:last-offset segment) + append-offset-length)))
 

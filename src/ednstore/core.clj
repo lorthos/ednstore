@@ -62,7 +62,7 @@
   (stop!
     [this]
     (log/infof "Shutting down db...")
-    (.shutdown @merge-pool)
+    (.shutdownNow @merge-pool)
     (dorun (map s/close-segment! (s/get-all-segments)))
     (reset! s/active-segment nil)
     (reset! s/old-segments {})
