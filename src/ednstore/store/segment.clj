@@ -3,7 +3,8 @@
   additional logic about merging should be handled here"
   (:require
     [ednstore.common :as c]
-    [ednstore.io.core :refer :all]))
+    [ednstore.io.core :refer :all]
+    [ednstore.io.write :as w]))
 
 (defonce old-segments (atom {}))
 (defonce active-segment (atom nil))
@@ -30,12 +31,12 @@
       {:id          id
        :index       (atom {})
        :last-offset (atom 0)
-       :wc          (make-write-channel! file)
+       :wc          (w/make-write-channel! file)
        :rc          (make-read-channel! file)})))
 
 (defn close-segment! [segment]
   (if (:wc segment)
-    (close-write! (:wc segment)))
+    (w/close!! (:wc segment)))
   (close-read!! (:rc segment)))
 
 (defn roll-new-segment!
@@ -58,7 +59,7 @@
         (reset! active-segment segment)
         (if old-active
           (do
-            (close-write! (:wc old-active))
+            (w/close!! (:wc old-active))
             (swap! old-segments assoc old-id
                    (map->ReadOnlySegment {:id    old-id
                                           :index (:index old-active)

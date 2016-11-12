@@ -2,8 +2,7 @@
   (:require [clojure.test :refer :all]
             [ednstore.common :refer :all]
             [ednstore.core :refer :all]
-            [ednstore.env :as e]
-            [clojure.java.io :as io])
+            [ednstore.env :as e])
   (:import (ednstore.core SimpleDiskStore)))
 
 (def S (atom nil))

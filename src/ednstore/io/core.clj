@@ -2,7 +2,7 @@
   "reads serialization format from underlying channel"
   (:require [ednstore.serialization.core :as ser]
             [nio.core :as nio])
-  (:import (java.nio.channels SeekableByteChannel WritableByteChannel)
+  (:import (java.nio.channels SeekableByteChannel)
            (java.nio ByteBuffer)))
 
 
@@ -38,20 +38,6 @@
   (close-read!! [this]
     (.close chan)))
 
-(defprotocol WriteChannel
-  (write [this barray])
-  (close-write! [this]))
-
-(deftype NIOWriteChannel [^WritableByteChannel chan]
-  WriteChannel
-  (write [this barray]
-    (.write chan (nio/byte-buffer barray)))
-  (close-write! [this]
-    (.close chan)))
-
-
-(defn make-write-channel! [file]
-  (NIOWriteChannel. (nio/writable-channel file)))
 
 (defn make-read-channel! [file]
   (NIOReadChannel. (nio/readable-channel file)))
