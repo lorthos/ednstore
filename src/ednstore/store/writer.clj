@@ -1,7 +1,8 @@
 (ns ednstore.store.writer
-  (:require [nio.core :as nio]
-            [ednstore.store.segment]
-            [ednstore.serialization.core :as ser])
+  (:require
+    [ednstore.store.segment]
+    [ednstore.serialization.core :as ser]
+    [ednstore.io.core :refer :all])
   (:import (ednstore.store.segment ActiveSegment)))
 
 (defn write!
@@ -22,8 +23,7 @@
     ;TODO should be atomic
     (swap! (:index segment) assoc k @(:last-offset segment))
     (swap! (:last-offset segment) + append-offset-length)
-    (.write (:wc segment) (nio/byte-buffer barray))
-    ;(.flush (:wc segment))
+    (write (:wc segment) barray)
     )
   )
 
@@ -38,7 +38,7 @@
     ;TODO atomic
     (swap! (:index segment) assoc k @(:last-offset segment))
     (swap! (:last-offset segment) + append-offset-length)
-    (.write (:wc segment) (nio/byte-buffer barray))
+    (write (:wc segment) barray)
     )
   )
 

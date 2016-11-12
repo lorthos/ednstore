@@ -1,24 +1,24 @@
 (ns ednstore.store.reader
   (:require [ednstore.store.segment :as s :refer :all]
-            [ednstore.io.core :as io]
+            [ednstore.io.core :refer :all]
             [clojure.tools.logging :as log])
-  (:import (java.nio.channels SeekableByteChannel)
-           (java.util Iterator)
-           (ednstore.store.segment SegmentOperationLog)))
+  (:import
+    (java.util Iterator)
+    (ednstore.store.segment SegmentOperationLog)))
 
 (defn read-kv
   "read the next key value pair starting with the given offset from the channel"
-  [^SeekableByteChannel chan offset]
+  [chan offset]
   (do
     (log/debugf "seek to position %s for channel: %s" offset chan)
-    (.position chan offset)
-    (let [kl (io/read-int-from-chan chan)
-          k (io/read-type-from-chan chan kl)
-          op_type (io/read-byte-from-chan chan)]
+    (position chan offset)
+    (let [kl (read-int chan)
+          k (read-wire-format chan kl)
+          op_type (read-byte chan)]
       (log/debugf "Read key length: %s key: %s op-type: %s" kl k op_type)
       (if (= op_type (byte 41))
-        (let [vl (io/read-int-from-chan chan)
-              v (io/read-type-from-chan chan vl)]
+        (let [vl (read-int chan)
+              v (read-wire-format chan vl)]
           {:key k :val v})))))
 
 (defn read-direct
@@ -26,7 +26,7 @@
   old indexes might still contain deleted-record's key"
   [read-key segment]
   (let [offset (get @(:index segment) read-key nil)
-        chan ^SeekableByteChannel (:rc segment)]
+        chan (:rc segment)]
     (if offset
       (:val (read-kv chan offset))
       nil)))
@@ -62,12 +62,12 @@
   6. calculates total bytes read returns the key and new offset"
   [chan offset-atom]
   (let [old-offset @offset-atom
-        kl (io/read-int-from-chan chan)
-        k (io/read-type-from-chan chan kl)
-        op_type (io/read-byte-from-chan chan)]
+        kl (read-int chan)
+        k (read-wire-format chan kl)
+        op_type (read-byte chan)]
     (if (= op_type (byte 41))
-      (let [vl (io/read-int-from-chan chan)
-            v (io/read-type-from-chan chan vl)]
+      (let [vl (read-int chan)
+            v (read-wire-format chan vl)]
         (do
           (swap! offset-atom + 4 kl 1 4 vl)
           (map->SegmentOperationLog
@@ -85,10 +85,10 @@
 
   will read evey operation including the deletion markers,
   does not read the value"
-  [^SeekableByteChannel read-channel]
-  (.position read-channel 0)
+  [read-channel]
+  (position read-channel 0)
   (let [current (atom 0)
-        end (.size read-channel)]
+        end (size read-channel)]
     (iterator-seq
       (reify Iterator
         (hasNext [this] (< @current end))

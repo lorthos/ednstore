@@ -1,9 +1,7 @@
 (ns ednstore.store.loader
   (:require [ednstore.common :as c]
-            [ednstore.store.segment :as s :refer :all]
-            [nio.core :as nio]
-            [ednstore.io.core :as io])
-  (:import (java.nio.channels SeekableByteChannel)))
+            [ednstore.store.segment :refer :all]
+            [ednstore.io.core :refer :all]))
 
 (defn read-next-key-and-offset-and-increment!
   "given a channel that is at the end position of a record (or at the beginning of the file)
@@ -16,12 +14,12 @@
   [chan offset-atom]
   ;TODO skip instead of read?
   (let [old-offset @offset-atom
-        kl (io/read-int-from-chan chan)
-        k (io/read-type-from-chan chan kl)
-        op_type (io/read-byte-from-chan chan)]
+        kl (read-int chan)
+        k (read-wire-format chan kl)
+        op_type (read-byte chan)]
     (if (= op_type (byte 41))
-      (let [vl (io/read-int-from-chan chan)
-            v (io/read-type-from-chan chan vl)]
+      (let [vl (read-int chan)
+            v (read-wire-format chan vl)]
         (do
           (swap! offset-atom + 4 kl 1 4 vl)
           {:key k :old-offset old-offset :new-offset @offset-atom}))
@@ -40,10 +38,10 @@
   "goes through all the keys and re-construct {:key offset} hash index
   1. position the chan to the beginning offset
   2. read and assoc accordingly"
-  [^SeekableByteChannel chan]
-  (.position chan 0)
+  [chan]
+  (position chan 0)
   (let [offset-atom (atom 0)
-        end (.size chan)
+        end (size chan)
         index (atom {})]
     (loop [current 0]
       (if (= current end)
@@ -56,7 +54,7 @@
   "given the segment id, load it as a read only segment"
   [id]
   (let [segment-file (c/get-segment-file! id)
-        read-chan (nio/readable-channel segment-file)
+        read-chan (make-read-channel! segment-file)
         loaded (load-index read-chan)]
     (map->ReadOnlySegment
       {:id    id

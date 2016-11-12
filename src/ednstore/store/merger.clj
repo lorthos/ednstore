@@ -1,13 +1,11 @@
 (ns ednstore.store.merger
   (:require [ednstore.store.segment :as s]
-            [ednstore.common :as c :refer [->opts]]
+            [ednstore.common :refer [->opts]]
             [ednstore.store.reader :as r]
             [ednstore.store.writer :as w]
-            [ednstore.store.loader :as lo]
             [clojure.tools.logging :as log])
-  (:import (java.util.concurrent Executors)
-           (ednstore.store.segment ReadOnlySegment SegmentOperationLog)
-           (java.nio.channels SeekableByteChannel WritableByteChannel)))
+  (:import (ednstore.store.segment ReadOnlySegment SegmentOperationLog)
+           (java.nio.channels SeekableByteChannel)))
 
 (defn cleanup-log
   "given a log sequence, reduce it in a way that we end up with the
