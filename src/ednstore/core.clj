@@ -9,12 +9,12 @@
             [clojure.java.io :as io]
             [clojure.tools.logging :as log])
   (:refer ednstore.common :only [IKVStorage])
-  (:import (java.util.concurrent Executors)
+  (:import (java.util.concurrent Executors TimeUnit)
            (java.io File)))
 
-(def exec
+(def exec-pool
   "Main write thread, all writes are sequential"
-  (Executors/newSingleThreadExecutor))
+  (atom nil))
 
 (def merge-pool
   (atom nil))
@@ -23,14 +23,16 @@
   (insert! [this k v]
     (if (< @(:last-offset @s/active-segment)
            (:segment-roll-size e/props))
-      (c/do-sequential exec (wrt/write! k v @s/active-segment))
+      (c/do-sequential @exec-pool
+                       (wrt/write! k v @s/active-segment))
       (do
         (log/infof "Segment: %s has reached max size, rolling new" (:id @s/active-segment))
         (s/roll-new-segment! (inc (:id @s/active-segment)))
         )))
 
   (delete! [this k]
-    (c/do-sequential exec (wrt/delete! k @s/active-segment)))
+    (c/do-sequential @exec-pool
+                     (wrt/delete! k @s/active-segment)))
 
   (lookup
     [this k]
@@ -54,6 +56,7 @@
         (let [active-segment (s/roll-new-segment! 1000)]
           (reset! s/active-segment active-segment))))
     ;init the merger
+    (reset! exec-pool (Executors/newSingleThreadExecutor))
     (reset! merge-pool
             (mcon/make-merger-pool! (:merge-trigger-interval-sec e/props)
                                     s/old-segments))
@@ -62,7 +65,10 @@
   (stop!
     [this]
     (log/infof "Shutting down db...")
-    (.shutdownNow @merge-pool)
+    (.shutdown @merge-pool)
+    (.awaitTermination @merge-pool 1 TimeUnit/MINUTES)
+    (.shutdown @exec-pool)
+    (.awaitTermination @exec-pool 1 TimeUnit/MINUTES)
     (dorun (map s/close-segment! (s/get-all-segments)))
     (reset! s/active-segment nil)
     (reset! s/old-segments {})
