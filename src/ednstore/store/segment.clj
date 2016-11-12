@@ -6,9 +6,6 @@
     [ednstore.io.read :refer :all]
     [ednstore.io.write :as w]))
 
-(defonce old-segments (atom {}))
-(defonce active-segment (atom nil))
-
 (defrecord ActiveSegment
   [id index last-offset
    wc
@@ -20,13 +17,10 @@
 (defrecord SegmentOperationLog
   [key old-offset new-offset op-type])
 
-(defn get-all-segments []
-  (cons @active-segment (vals @old-segments)))
-
 (defn make-new-segment!
   "make a new segment at the given path with the given id"
-  [id]
-  (let [file (c/get-segment-file! id)]
+  [namespace id]
+  (let [file (c/get-segment-file! namespace id)]
     (map->ActiveSegment
       {:id          id
        :index       (atom {})
@@ -50,7 +44,7 @@
   3.close write channel of old active segment and create ReadOnlySegment
   4.move old active segment to old-segment list
   "
-  [id]
+  [id namespace]
   (let [segment (make-new-segment! id)]
     ;point to new active segment
     (if @active-segment

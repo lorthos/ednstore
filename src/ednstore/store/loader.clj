@@ -41,8 +41,8 @@
 
 (defn load-read-only-segment
   "given the segment id, load it as a read only segment"
-  [id]
-  (let [segment-file (c/get-segment-file! id)
+  [namespace id]
+  (let [segment-file (c/get-segment-file! namespace id)
         read-chan (make-read-channel! segment-file)
         loaded (load-index read-chan)]
     (map->ReadOnlySegment

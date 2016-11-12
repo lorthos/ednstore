@@ -1,6 +1,7 @@
 (ns ednstore.common
   (:require [clojure.java.io :as io]
-            [ednstore.env :as e]))
+            [ednstore.env :as e])
+  (:import (java.io File)))
 
 
 (defprotocol IKVStorage
@@ -21,9 +22,10 @@
 
 (defn get-segment-file!
   "based on the segment id and configured folder, get the full file"
-  [id]
+  [namespace id]
   (let [root-path (:path e/props)
-        file (io/file (str root-path id ".tbl"))]
+        ns-root (str root-path namespace)
+        file (io/file (str ns-root File/pathSeparator id ".tbl"))]
     (io/make-parents file)
     file))
 
