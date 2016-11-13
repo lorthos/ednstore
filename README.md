@@ -14,8 +14,6 @@ Embeddable key value store for Clojure, similar to bitcask & leveldb
 ## TODO
 
 - better merge policy, key to size ratio
-- performance & validation test
-- externalize serialization
 - benchmark
 
 ## License
