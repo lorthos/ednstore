@@ -4,13 +4,13 @@
             [ednstore.store.metadata :as md]
             [ednstore.store.segment :as s]))
 
-(def test-db-ns "writer-test1")
+(def test-db "writer-test1")
 
 (defn writer-fixture [f]
   (reset! md/store-meta {})
-  (s/roll-new-segment! test-db-ns 0)
+  (s/roll-new-segment! test-db 0)
   (f)
-  (s/close-segment! (md/get-active-segment-for-namespace test-db-ns)))
+  (s/close-segment! (md/get-active-segment-for-table test-db)))
 
 (use-fixtures :each writer-fixture)
 
@@ -18,35 +18,35 @@
 (deftest put-to-active-segment
   (testing "segment, index and offset management when writing"
     ;index last-offset read-chan write-chan
-    (write! test-db-ns "A" "B")
-    (write! test-db-ns "AAAA" "BBBB")
+    (write! test-db "A" "B")
+    (write! test-db "AAAA" "BBBB")
     ;validate index
-    (is (= 2 (count (keys @(:index (md/get-active-segment-for-namespace test-db-ns))))))
-    (is (= 72 @(:last-offset (md/get-active-segment-for-namespace test-db-ns))))
-    (is (= 0 (get @(:index (md/get-active-segment-for-namespace test-db-ns)) "A")))
-    (is (= 33 (get @(:index (md/get-active-segment-for-namespace test-db-ns)) "AAAA")))
+    (is (= 2 (count (keys @(:index (md/get-active-segment-for-table test-db))))))
+    (is (= 72 @(:last-offset (md/get-active-segment-for-table test-db))))
+    (is (= 0 (get @(:index (md/get-active-segment-for-table test-db)) "A")))
+    (is (= 33 (get @(:index (md/get-active-segment-for-table test-db)) "AAAA")))
     ))
 
 (deftest delete-from-active-segment
   (testing "segment, index and offset management when writing"
     ;index last-offset read-chan write-chan
-    (write! test-db-ns "A" "B")
-    (write! test-db-ns "AAAA" "BBBB")
+    (write! test-db "A" "B")
+    (write! test-db "AAAA" "BBBB")
     ;validate index
-    (is (= 2 (count (keys @(:index (md/get-active-segment-for-namespace test-db-ns))))))
-    (delete! test-db-ns "A")
-    (is (= 2 (count (keys @(:index (md/get-active-segment-for-namespace test-db-ns))))))
+    (is (= 2 (count (keys @(:index (md/get-active-segment-for-table test-db))))))
+    (delete! test-db "A")
+    (is (= 2 (count (keys @(:index (md/get-active-segment-for-table test-db))))))
     ;TODO side-effect of deleting something that does not exist
-    (delete! test-db-ns "NON_EXISTING_KEY")
-    (is (= 3 (count (keys @(:index (md/get-active-segment-for-namespace test-db-ns))))))
+    (delete! test-db "NON_EXISTING_KEY")
+    (is (= 3 (count (keys @(:index (md/get-active-segment-for-table test-db))))))
     )
   )
 
 (deftest custom-write-test
   (testing "writing to segment directly"
-    (is (= 0 (count (keys @(:index (md/get-active-segment-for-namespace test-db-ns))))))
-    (write-to-segment! "CCCC" "CCCC" (md/get-active-segment-for-namespace test-db-ns))
-    (is (= 1 (count (keys @(:index (md/get-active-segment-for-namespace test-db-ns))))))
+    (is (= 0 (count (keys @(:index (md/get-active-segment-for-table test-db))))))
+    (write-to-segment! "CCCC" "CCCC" (md/get-active-segment-for-table test-db))
+    (is (= 1 (count (keys @(:index (md/get-active-segment-for-table test-db))))))
     )
 
   )

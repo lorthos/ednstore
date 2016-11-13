@@ -53,10 +53,10 @@
 
 (defn read-all
   "search for the given key across all indexes of all segments"
-  [namespace k]
-  (if (nil? (md/get-active-segment-for-namespace namespace))
+  [table k]
+  (if (nil? (md/get-active-segment-for-table table))
     (throw (RuntimeException. "active segment is null!")))
-  (let [all-segments (md/get-all-segments namespace)
+  (let [all-segments (md/get-all-segments table)
         target-segment (first (filter #(segment-has-key? k %) all-segments))]
     (if target-segment
       (read-direct k target-segment)

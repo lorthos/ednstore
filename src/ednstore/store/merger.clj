@@ -71,7 +71,7 @@
   "merge the two segments and return a new ReadOnlySegment
 
   Will run in a seperate single background thread"
-  [^String current-namespace
+  [^String table
    ^ReadOnlySegment older-segment
    ^ReadOnlySegment newer-segment]
   (log/debugf "Make-merge! oold-segment %s new-segment %s"
@@ -79,7 +79,7 @@
               newer-segment)
   (let [oplog (make-oplog-for-new-segment older-segment
                                           newer-segment)
-        new-segment (s/make-new-segment! current-namespace
+        new-segment (s/make-new-segment! table
                                          (dec (:id older-segment)))]
     (log/debugf "Read Oplog: %s" (into [] oplog))
     (log/debugf "segment created: %s" (into {} new-segment))

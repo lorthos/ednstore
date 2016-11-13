@@ -5,13 +5,13 @@
             [ednstore.store.writer :as wrt]
             [ednstore.store.metadata :as md]))
 
-(def test-db-ns "loader-test1")
+(def test-db "loader-test1")
 
 (defn loader-fixture [f]
   (reset! md/store-meta {})
-  (s/roll-new-segment! test-db-ns 0)
+  (s/roll-new-segment! test-db 0)
   (f)
-  (s/close-segment! (md/get-active-segment-for-namespace test-db-ns)))
+  (s/close-segment! (md/get-active-segment-for-table test-db)))
 
 (use-fixtures :each loader-fixture)
 
@@ -35,25 +35,25 @@
 ;TODO will fail when serialization function changes
 (deftest reconstruct-index
   (testing "reading-from-actual-segment"
-    (wrt/write! test-db-ns "A" "B")
-    (wrt/write! test-db-ns "B" "C")
-    (wrt/write! test-db-ns "C" "D")
+    (wrt/write! test-db "A" "B")
+    (wrt/write! test-db "B" "C")
+    (wrt/write! test-db "C" "D")
 
     (is (= {:index {"A" 0 "B" 33 "C" 66} :offset 99}
-           (load-index (:rc (md/get-active-segment-for-namespace test-db-ns)))))
-    (wrt/write! test-db-ns "DD" "EE")
-    (wrt/write! test-db-ns "E" "F")
+           (load-index (:rc (md/get-active-segment-for-table test-db)))))
+    (wrt/write! test-db "DD" "EE")
+    (wrt/write! test-db "E" "F")
 
     (is (= {:index {"A" 0 "B" 33 "C" 66 "DD" 99 "E" 134} :offset 167}
-           (load-index (:rc (md/get-active-segment-for-namespace test-db-ns)))))
-    (wrt/delete! test-db-ns "E")
+           (load-index (:rc (md/get-active-segment-for-table test-db)))))
+    (wrt/delete! test-db "E")
 
     (is (= {:index {"A" 0 "B" 33 "C" 66 "DD" 99 "E" 167} :offset 184}
-           (load-index (:rc (md/get-active-segment-for-namespace test-db-ns)))))
+           (load-index (:rc (md/get-active-segment-for-table test-db)))))
 
-    (wrt/delete! test-db-ns "DD")
+    (wrt/delete! test-db "DD")
     (is (= {:index {"A" 0 "B" 33 "C" 66 "DD" 184 "E" 167} :offset 202}
-           (load-index (:rc (md/get-active-segment-for-namespace test-db-ns)))))
+           (load-index (:rc (md/get-active-segment-for-table test-db)))))
 
     )
   )

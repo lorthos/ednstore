@@ -5,61 +5,61 @@
             [ednstore.store.writer :as wrt]
             [ednstore.store.metadata :as md]))
 
-(def test-db-ns "reader-test1")
+(def test-db "reader-test1")
 
 (defn reader-fixture [f]
   (reset! md/store-meta {})
-  (s/roll-new-segment! test-db-ns 0)
+  (s/roll-new-segment! test-db 0)
   (f)
-  (close-segment! (md/get-active-segment-for-namespace test-db-ns)))
+  (close-segment! (md/get-active-segment-for-table test-db)))
 
 (use-fixtures :each reader-fixture)
 
 (deftest read-from-segment
   (testing "read key from segment file"
-    (wrt/write! test-db-ns "A" "B")
-    (wrt/write! test-db-ns "AAAA" "BBBB")
-    (is (= "B" (read-direct "A" (md/get-active-segment-for-namespace test-db-ns))))
-    (is (= "BBBB" (read-direct "AAAA" (md/get-active-segment-for-namespace test-db-ns)))))
+    (wrt/write! test-db "A" "B")
+    (wrt/write! test-db "AAAA" "BBBB")
+    (is (= "B" (read-direct "A" (md/get-active-segment-for-table test-db))))
+    (is (= "BBBB" (read-direct "AAAA" (md/get-active-segment-for-table test-db)))))
   (testing "read when key does not exist"
-    (is (nil? (read-direct "NON_EXISTING_KEY" (md/get-active-segment-for-namespace test-db-ns)))))
+    (is (nil? (read-direct "NON_EXISTING_KEY" (md/get-active-segment-for-table test-db)))))
   (testing "read when key is marked as deleted"
-    (is (= "BBBB" (read-direct "AAAA" (md/get-active-segment-for-namespace test-db-ns))))
-    (wrt/delete! test-db-ns "AAAA")
-    (is (nil? (read-direct "AAAA" (md/get-active-segment-for-namespace test-db-ns)))))
+    (is (= "BBBB" (read-direct "AAAA" (md/get-active-segment-for-table test-db))))
+    (wrt/delete! test-db "AAAA")
+    (is (nil? (read-direct "AAAA" (md/get-active-segment-for-table test-db)))))
   (testing "when key is updated"
-    (wrt/write! test-db-ns "UPDATE" "V1")
-    (is (= "V1" (read-direct "UPDATE" (md/get-active-segment-for-namespace test-db-ns))))
-    (wrt/write! test-db-ns "UPDATE" "V2")
-    (is (= "V2" (read-direct "UPDATE" (md/get-active-segment-for-namespace test-db-ns))))
-    (wrt/delete! test-db-ns "UPDATE")
-    (is (nil? (read-direct "UPDATE" (md/get-active-segment-for-namespace test-db-ns))))
+    (wrt/write! test-db "UPDATE" "V1")
+    (is (= "V1" (read-direct "UPDATE" (md/get-active-segment-for-table test-db))))
+    (wrt/write! test-db "UPDATE" "V2")
+    (is (= "V2" (read-direct "UPDATE" (md/get-active-segment-for-table test-db))))
+    (wrt/delete! test-db "UPDATE")
+    (is (nil? (read-direct "UPDATE" (md/get-active-segment-for-table test-db))))
     )
   (testing "test read from all segments"
-    (wrt/write! test-db-ns "s0" "v0")
-    (is (= "v0" (read-direct "s0" (md/get-active-segment-for-namespace test-db-ns))))
-    (is (= "v0" (read-all test-db-ns "s0")))
-    (let [old-segment-id (:id (md/get-active-segment-for-namespace test-db-ns))]
+    (wrt/write! test-db "s0" "v0")
+    (is (= "v0" (read-direct "s0" (md/get-active-segment-for-table test-db))))
+    (is (= "v0" (read-all test-db "s0")))
+    (let [old-segment-id (:id (md/get-active-segment-for-table test-db))]
       (is (= 0 old-segment-id))
-      (s/roll-new-segment! test-db-ns 1)
-      (is (= 1 (:id (md/get-active-segment-for-namespace test-db-ns))))
-      (is (true? (contains? (md/get-old-segments test-db-ns) old-segment-id)))
-      (is (nil? (read-direct "s0" (md/get-active-segment-for-namespace test-db-ns))))
+      (s/roll-new-segment! test-db 1)
+      (is (= 1 (:id (md/get-active-segment-for-table test-db))))
+      (is (true? (contains? (md/get-old-segments test-db) old-segment-id)))
+      (is (nil? (read-direct "s0" (md/get-active-segment-for-table test-db))))
       (println
         "****"
-        (md/get-old-segments test-db-ns))
-      (is (= "v0" (read-direct "s0" (get (md/get-old-segments test-db-ns) old-segment-id))))
-      (is (= "v0" (read-all test-db-ns "s0")))
-      (wrt/write! test-db-ns "s1" "v1")
-      (is (= "v1" (read-all test-db-ns "s1")))
-      (wrt/write! test-db-ns "s1" "v11")
-      (is (= "v11" (read-all test-db-ns "s1")))
-      (s/roll-new-segment! test-db-ns 2)
-      (is (= 2 (:id (md/get-active-segment-for-namespace test-db-ns))))
-      (is (= "v11" (read-all test-db-ns "s1")))
-      (is (= "v0" (read-all test-db-ns "s0")))
-      (wrt/write! test-db-ns "s2" "v2")
-      (is (= "v2" (read-all test-db-ns "s2")))))
+        (md/get-old-segments test-db))
+      (is (= "v0" (read-direct "s0" (get (md/get-old-segments test-db) old-segment-id))))
+      (is (= "v0" (read-all test-db "s0")))
+      (wrt/write! test-db "s1" "v1")
+      (is (= "v1" (read-all test-db "s1")))
+      (wrt/write! test-db "s1" "v11")
+      (is (= "v11" (read-all test-db "s1")))
+      (s/roll-new-segment! test-db 2)
+      (is (= 2 (:id (md/get-active-segment-for-table test-db))))
+      (is (= "v11" (read-all test-db "s1")))
+      (is (= "v0" (read-all test-db "s0")))
+      (wrt/write! test-db "s2" "v2")
+      (is (= "v2" (read-all test-db "s2")))))
   (testing "segment as collection of operations"
     (is (= '({:key        "A"
               :new-offset 33
@@ -89,7 +89,7 @@
                :new-offset 227
                :old-offset 192
                :op-type    41})
-           (->> (get (md/get-old-segments test-db-ns) 0)
+           (->> (get (md/get-old-segments test-db) 0)
                 :rc
                 segment->seq
                 (map #(into {} %)))))
@@ -102,7 +102,7 @@
                :new-offset 71
                :old-offset 35
                :op-type    41})
-           (->> (get (md/get-old-segments test-db-ns) 1)
+           (->> (get (md/get-old-segments test-db) 1)
                 :rc
                 segment->seq
                 (map #(into {} %)))))
@@ -111,7 +111,7 @@
              :new-offset 35
              :old-offset 0
              :op-type    41}]
-           (->> (md/get-active-segment-for-namespace test-db-ns)
+           (->> (md/get-active-segment-for-table test-db)
                 :rc
                 segment->seq
                 (map #(into {} %)))))

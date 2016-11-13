@@ -15,8 +15,8 @@
   3.write
   "
   ;TODO should be atomic
-  [^String current-namespace k v]
-  (let [segment (md/get-active-segment-for-namespace current-namespace)
+  [^String table k v]
+  (let [segment (md/get-active-segment-for-table table)
         append-offset-length (w/write-pair!! (:wc segment) k v)]
     (swap! (:index segment) assoc k @(:last-offset segment))
     (swap! (:last-offset segment) + append-offset-length)))
@@ -35,8 +35,8 @@
   2.update index
   3.append segment offset counter"
   ;TODO should be atomic
-  [^String current-namespace k]
-  (let [segment (md/get-active-segment-for-namespace current-namespace)
+  [^String table k]
+  (let [segment (md/get-active-segment-for-table table)
         append-offset-length (w/delete-key!! (:wc segment) k)]
     (swap! (:index segment) assoc k @(:last-offset segment))
     (swap! (:last-offset segment) + append-offset-length)))

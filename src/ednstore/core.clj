@@ -20,74 +20,74 @@
 (def merge-pool
   (atom nil))
 
-(defn load-existing-namespace! [current-namespace]
-  (let [segment-ids (->> (str (:path e/props) current-namespace)
+(defn load-existing-table! [table]
+  (let [segment-ids (->> (str (:path e/props) table)
                          clojure.java.io/file
                          file-seq
                          (remove #(.isDirectory ^File %))
                          reverse
                          (map (comp read-string #(.substring % 0 (.lastIndexOf % ".")) #(.getName ^File %))))]
-    (md/create-ns-metadata! current-namespace)
-    (log/infof "About to load the following segments for namespace %s : %s "
-               current-namespace
+    (md/create-ns-metadata! table)
+    (log/infof "About to load the following segments for table %s : %s "
+               table
                segment-ids)
-    (let [active-segment (s/roll-new-segment! current-namespace (inc (first segment-ids)))
+    (let [active-segment (s/roll-new-segment! table (inc (first segment-ids)))
           read-segments (zipmap segment-ids (doall (map #(ldr/load-read-only-segment
-                                                           current-namespace
+                                                           table
                                                            %) segment-ids)))]
       ;TODO shut down existing stuff first or check?
-      (md/set-active-segment-for-ns! current-namespace active-segment)
-      (md/set-old-segments-for-ns! current-namespace read-segments))
+      (md/set-active-segment-for-table! table active-segment)
+      (md/set-old-segments-for-table! table read-segments))
     ))
 
-(defn init-new-namespace! [current-namespace]
-  (md/create-ns-metadata! current-namespace)
-  (let [active-segment (s/roll-new-segment! current-namespace 1000)]
-    (md/set-active-segment-for-ns! current-namespace active-segment)))
+(defn init-new-table! [table]
+  (md/create-ns-metadata! table)
+  (let [active-segment (s/roll-new-segment! table 1000)]
+    (md/set-active-segment-for-table! table active-segment)))
 
 
 (deftype SimpleDiskStore [] IKVStorage
-  (insert! [this current-namespace k v]
-    (log/debugf "write key: %s value: %s to namespace: %s"
-                k v current-namespace)
+  (insert! [this table k v]
+    (log/debugf "write key: %s value: %s to table: %s"
+                k v table)
 
-    (if-not (md/get-active-segment-for-namespace current-namespace)
+    (if-not (md/get-active-segment-for-table table)
       (do
-        (log/infof "Writing no non-existing namespace, initalizing with default settings")
-        (init-new-namespace! current-namespace)))
+        (log/infof "Writing no non-existing table, initalizing with default settings")
+        (init-new-table! table)))
 
-    (if (< @(:last-offset (md/get-active-segment-for-namespace current-namespace))
+    (if (< @(:last-offset (md/get-active-segment-for-table table))
            (:segment-roll-size e/props))
       (c/do-sequential @exec-pool
-                       (wrt/write! current-namespace k v))
+                       (wrt/write! table k v))
       (do
         (log/infof "Segment: %s has reached max size, rolling new"
-                   (:id (md/get-active-segment-for-namespace current-namespace)))
-        (s/roll-new-segment! current-namespace
-                             (inc (:id (md/get-active-segment-for-namespace current-namespace)))))))
+                   (:id (md/get-active-segment-for-table table)))
+        (s/roll-new-segment! table
+                             (inc (:id (md/get-active-segment-for-table table)))))))
 
-  (delete! [this current-namespace k]
+  (delete! [this table k]
     (c/do-sequential @exec-pool
-                     (wrt/delete! current-namespace k)))
+                     (wrt/delete! table k)))
 
   (lookup
-    [this current-namespace k]
-    (rdr/read-all current-namespace k))
+    [this table k]
+    (rdr/read-all table k))
 
   (initialize! [this config]
     (.mkdir (io/file (:path config)))
-    (let [existing-namespaces
+    (let [existing-tables
           (into []
                 (map
                   #(.getName %)
-                  (-> "target/segments"
+                  (-> (:path config)
                       clojure.java.io/file
                       .listFiles)))]
-      (log/infof "Initializing edn store with existing namespaces : %s" existing-namespaces)
+      (log/infof "Initializing edn store with existing tables : %s" existing-tables)
       (doall
         (map
-          load-existing-namespace!
-          existing-namespaces)))
+          load-existing-table!
+          existing-tables)))
     (log/infof "Initializing thread pools .....")
     ;init the merger
     (reset! exec-pool (Executors/newSingleThreadExecutor))
@@ -105,7 +105,7 @@
     (dorun (map s/close-segment! (flatten
                                    (map
                                      md/get-all-segments
-                                     (md/get-namespaces)))))
+                                     (md/get-tables)))))
     (reset! md/store-meta {})
     ))
 
