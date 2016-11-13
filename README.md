@@ -9,12 +9,10 @@ Embeddable key value store for Clojure, similar to bitcask & leveldb
 
 ## Usage
 
-FIXME
+[Documentation](https://github.com/lorthos/ednstore/blob/master/doc/README.md)
 
 ## TODO
 
-+ loading test
-+ segment merger
 - better merge policy, key to size ratio
 - performance & validation test
 - externalize serialization
