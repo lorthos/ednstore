@@ -4,7 +4,10 @@
             [ednstore.store.segment :as seg :refer :all]
             [ednstore.store.loader :as lo]
             [ednstore.store.writer :as w]
-            [ednstore.store.reader :as r]))
+            [ednstore.store.reader :as r]
+            [ednstore.store.metadata :as md]))
+
+(def test-db-ns "merger-test1")
 
 (def log1
   [{:key        "A"
@@ -102,16 +105,23 @@
 (deftest merging-test
   (testing "creating 2 custom segments an merging them"
     (let [old-seg
-          (atom (seg/make-new-segment! 600))
+          (atom (seg/make-new-segment! test-db-ns 600))
           new-seg
-          (atom (seg/make-new-segment! 601))]
-      (w/write! "k1" "v1" @old-seg)
-      (w/write! "k1" "v2" @old-seg)
-      (w/write! "k2" "v1" @old-seg)
+          (atom (seg/make-new-segment! test-db-ns 601))]
 
-      (w/write! "k1" "v333" @new-seg)
-      (w/write! "k1" "v444" @new-seg)
-      (w/delete! "k2" @new-seg)
+      (with-redefs-fn {#'md/get-active-segment-for-namespace (fn [_] @old-seg)}
+        #(do
+           (w/write! test-db-ns "k1" "v1")
+           (w/write! test-db-ns "k1" "v2")
+           (w/write! test-db-ns "k2" "v1")))
+
+      (with-redefs-fn {#'md/get-active-segment-for-namespace (fn [_] @new-seg)}
+        #(do
+           (w/write! test-db-ns "k1" "v333")
+           (w/write! test-db-ns "k1" "v444")
+           (w/delete! test-db-ns "k2")))
+
+
 
       (is (= '({:from       :old
                 :key        "k1"
@@ -201,10 +211,11 @@
       (seg/close-segment! @old-seg)
       (seg/close-segment! @new-seg)
 
-      (reset! old-seg (lo/load-read-only-segment 600))
-      (reset! new-seg (lo/load-read-only-segment 601))
+      (reset! old-seg (lo/load-read-only-segment test-db-ns 600))
+      (reset! new-seg (lo/load-read-only-segment test-db-ns 601))
 
-      (make-merge! @old-seg
+      (make-merge! test-db-ns
+                   @old-seg
                    @new-seg)
 
       (seg/close-segment! @old-seg)
@@ -216,28 +227,36 @@
 (deftest merge-strategy-test
   (testing "merge streategy by size"
     (let [seg1
-          (atom (seg/make-new-segment! 101))
+          (atom (seg/make-new-segment! test-db-ns 101))
           seg2
-          (atom (seg/make-new-segment! 102))
+          (atom (seg/make-new-segment! test-db-ns 102))
           seg3
-          (atom (seg/make-new-segment! 103))]
+          (atom (seg/make-new-segment! test-db-ns 103))]
 
-      (w/write! "k1" "v1" @seg1)
-      (w/write! "k1" "v2" @seg1)
-      (w/write! "k2" "v1" @seg1)
 
-      (w/write! "k1" "v333" @seg2)
-      (w/write! "k1" "v444" @seg2)
-      (w/delete! "k2" @seg2)
+      (with-redefs-fn {#'md/get-active-segment-for-namespace (fn [_] @seg1)}
+        #(do
+           (w/write! test-db-ns "k1" "v1")
+           (w/write! test-db-ns "k1" "v2")
+           (w/write! test-db-ns "k2" "v1")))
 
-      (w/write! "k3" "v555" @seg3)
+      (with-redefs-fn {#'md/get-active-segment-for-namespace (fn [_] @seg2)}
+        #(do
+           (w/write! test-db-ns "k1" "v333")
+           (w/write! test-db-ns "k1" "v444")
+           (w/delete! test-db-ns "k2")))
+
+      (with-redefs-fn {#'md/get-active-segment-for-namespace (fn [_] @seg3)}
+        #(do
+           (w/write! test-db-ns "k3" "v555")))
+
 
       (is (= nil
              (get-mergeable-segments {101 @seg1
-                                         102 @seg2
-                                         103 @seg3} {:min-size 1000000})))
+                                      102 @seg2
+                                      103 @seg3} {:min-size 1000000})))
       (is (= [101 102]
              (map :id
                   (get-mergeable-segments {101 @seg1
-                                              102 @seg2
-                                              103 @seg3} {:min-size 10})))))))
+                                           102 @seg2
+                                           103 @seg3} {:min-size 10})))))))

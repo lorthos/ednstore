@@ -37,7 +37,16 @@
     (delete! test-db-ns "A")
     (is (= 2 (count (keys @(:index (md/get-active-segment-for-namespace test-db-ns))))))
     ;TODO side-effect of deleting something that does not exist
-    (delete! test-db-ns "NON_EXISTING_KEY" )
+    (delete! test-db-ns "NON_EXISTING_KEY")
     (is (= 3 (count (keys @(:index (md/get-active-segment-for-namespace test-db-ns))))))
     )
+  )
+
+(deftest custom-write-test
+  (testing "writing to segment directly"
+    (is (= 0 (count (keys @(:index (md/get-active-segment-for-namespace test-db-ns))))))
+    (write-to-segment! "CCCC" "CCCC" (md/get-active-segment-for-namespace test-db-ns))
+    (is (= 1 (count (keys @(:index (md/get-active-segment-for-namespace test-db-ns))))))
+    )
+
   )
