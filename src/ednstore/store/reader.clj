@@ -8,13 +8,16 @@
     (ednstore.store.segment SegmentOperationLog)))
 
 (defn read-block! [chan
-                   start-offset]
+                   start-offset
+                   read-val?]
   (let [kl (read-int!! chan)
         k (read-wire-format!! chan kl)
         op_type (read-byte!! chan)]
     (if (= op_type (byte 41))
       (let [vl (read-int!! chan)
-            v (read-wire-format!! chan vl)]
+            v (if read-val?
+                (read-wire-format!! chan vl)
+                nil)]
         {:key     k :old-offset start-offset :new-offset (+ start-offset 4 kl 1 4 vl)
          :op-type op_type
          :value   v})
@@ -27,7 +30,7 @@
   (do
     (log/debugf "seek to position %s for channel: %s" offset chan)
     (position!! chan offset)
-    (let [block (read-block! chan offset)]
+    (let [block (read-block! chan offset true)]
       (if (= (:op-type block) (byte 41))
         {:key (:key block) :val (:value block)}))))
 
@@ -71,7 +74,7 @@
   5. reads the value
   6. calculates total bytes read returns the key and new offset"
   [chan offset-atom]
-  (let [block (read-block! chan @offset-atom)]
+  (let [block (read-block! chan @offset-atom false)]
     (reset! offset-atom (:new-offset block))
     (dissoc block :value)))
 

@@ -10,8 +10,8 @@
   (:import (java.util.concurrent Executors TimeUnit)))
 
 (defn delete-segment-from-disk!
-  [namespace id]
-  (let [segment-file (c/get-segment-file! namespace id)]
+  [current-namespace id]
+  (let [segment-file (c/get-segment-file! current-namespace id)]
     (log/infof "Deleting segment %s from disk" id)
     (io/delete-file segment-file)))
 

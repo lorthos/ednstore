@@ -8,9 +8,9 @@
   (initialize! [this config])
   (stop! [this])
 
-  (insert! [this namespace k v])
-  (delete! [this namespace k])
-  (lookup [this namespace k]))
+  (insert! [this current-namespace k v])
+  (delete! [this current-namespace k])
+  (lookup [this current-namespace k]))
 
 (defmacro do-sequential
   "submit the expression to the sequential executor"
@@ -22,9 +22,9 @@
 
 (defn get-segment-file!
   "based on the segment id and configured folder, get the full file"
-  [namespace id]
+  [current-namespace id]
   (let [root-path (:path e/props)
-        ns-root (str root-path namespace)
+        ns-root (str root-path current-namespace)
         file (io/file (str ns-root File/separator id ".tbl"))]
     (io/make-parents file)
     file))

@@ -21,8 +21,8 @@
 
 (defn make-new-segment!
   "make a new segment at the given path with the given id"
-  [namespace id]
-  (let [file (c/get-segment-file! namespace id)]
+  [current-namespace id]
+  (let [file (c/get-segment-file! current-namespace id)]
     (map->ActiveSegment
       {:id          id
        :index       (atom {})
@@ -46,24 +46,24 @@
   3.close write channel of old active segment and create ReadOnlySegment
   4.move old active segment to old-segment list
   "
-  [namespace id]
-  (md/create-ns-metadata! namespace)
-  (let [new-segment (make-new-segment! namespace id)
-        old-active (md/get-active-segment-for-namespace namespace)]
+  [current-namespace id]
+  (md/create-ns-metadata! current-namespace)
+  (let [new-segment (make-new-segment! current-namespace id)
+        old-active (md/get-active-segment-for-namespace current-namespace)]
     ;first redirect the writes
     ;point to new active segment
-    (md/set-active-segment-for-ns! namespace new-segment)
+    (md/set-active-segment-for-ns! current-namespace new-segment)
     (log/debugf "rolled new segment, old active was %s" old-active)
     (when old-active
       (let [old-id (:id old-active)]
 
         ;close the old active segment
         (w/close!! (:wc old-active))
-        (log/debugf "old segments before roll: %s" (md/get-old-segments namespace))
-        (md/add-old-segment-for-ns! namespace old-id
+        (log/debugf "old segments before roll: %s" (md/get-old-segments current-namespace))
+        (md/add-old-segment-for-ns! current-namespace old-id
                                     (map->ReadOnlySegment {:id    old-id
                                                            :index (:index old-active)
                                                            :rc    (:rc old-active)}))
-        (log/debugf "old segments after roll: %s" (md/get-old-segments namespace))))
-    (md/get-active-segment-for-namespace namespace))
+        (log/debugf "old segments after roll: %s" (md/get-old-segments current-namespace))))
+    (md/get-active-segment-for-namespace current-namespace))
   )
