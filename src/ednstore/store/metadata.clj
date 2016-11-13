@@ -1,5 +1,4 @@
-(ns ednstore.store.metadata
-  (:import (ednstore.store.segment ActiveSegment ReadOnlySegment)))
+(ns ednstore.store.metadata)
 
 (defonce store-meta
          (atom {}))
@@ -26,11 +25,11 @@
     (swap! store-meta assoc namespace {:active-segment nil
                                        :old-segments   {}})))
 
-(defn set-active-segment-for-ns! [^String namespace ^ActiveSegment new-segment]
+(defn set-active-segment-for-ns! [^String namespace new-segment]
   (swap! store-meta assoc namespace {:active-segment new-segment
                                      :old-segments   (:old-segments (get @store-meta namespace))}))
 
-(defn add-old-segment-for-ns! [^String namespace old-segment-id ^ReadOnlySegment old-segment]
+(defn add-old-segment-for-ns! [^String namespace old-segment-id old-segment]
   (swap! store-meta assoc namespace {:active-segment (:active-segment (get @store-meta namespace))
                                      :old-segments   (assoc
                                                        (:old-segments (get @store-meta namespace))

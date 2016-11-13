@@ -2,15 +2,18 @@
   (:require [clojure.test :refer :all]
             [ednstore.store.loader :refer :all]
             [ednstore.store.segment :as s]
-            [ednstore.store.writer :as wrt]))
+            [ednstore.store.writer :as wrt]
+            [ednstore.store.metadata :as md]))
 
-(defn segment-fixture [f]
-  (s/roll-new-segment! 0)
+(def test-db-ns "loader-test1")
+
+(defn loader-fixture [f]
+  (reset! md/store-meta {})
+  (s/roll-new-segment! test-db-ns 0)
   (f)
-  (s/close-segment! @s/active-segment)
-  (reset! s/active-segment nil))
+  (s/close-segment! (md/get-active-segment-for-namespace test-db-ns)))
 
-(use-fixtures :each segment-fixture)
+(use-fixtures :each loader-fixture)
 
 (deftest append-next-line-to-index
   (testing "with read operation"
@@ -32,25 +35,25 @@
 ;TODO will fail when serialization function changes
 (deftest reconstruct-index
   (testing "reading-from-actual-segment"
-    (wrt/write! "A" "B" @s/active-segment)
-    (wrt/write! "B" "C" @s/active-segment)
-    (wrt/write! "C" "D" @s/active-segment)
+    (wrt/write! test-db-ns "A" "B")
+    (wrt/write! test-db-ns "B" "C")
+    (wrt/write! test-db-ns "C" "D")
 
     (is (= {:index {"A" 0 "B" 33 "C" 66} :offset 99}
-           (load-index (:rc @s/active-segment))))
-    (wrt/write! "DD" "EE" @s/active-segment)
-    (wrt/write! "E" "F" @s/active-segment)
+           (load-index (:rc (md/get-active-segment-for-namespace test-db-ns)))))
+    (wrt/write! test-db-ns "DD" "EE")
+    (wrt/write! test-db-ns "E" "F")
 
     (is (= {:index {"A" 0 "B" 33 "C" 66 "DD" 99 "E" 134} :offset 167}
-           (load-index (:rc @s/active-segment))))
-    (wrt/delete! "E" @s/active-segment)
+           (load-index (:rc (md/get-active-segment-for-namespace test-db-ns)))))
+    (wrt/delete! test-db-ns "E")
 
     (is (= {:index {"A" 0 "B" 33 "C" 66 "DD" 99 "E" 167} :offset 184}
-           (load-index (:rc @s/active-segment))))
+           (load-index (:rc (md/get-active-segment-for-namespace test-db-ns)))))
 
-    (wrt/delete! "DD" @s/active-segment)
+    (wrt/delete! test-db-ns "DD")
     (is (= {:index {"A" 0 "B" 33 "C" 66 "DD" 184 "E" 167} :offset 202}
-           (load-index (:rc @s/active-segment))))
+           (load-index (:rc (md/get-active-segment-for-namespace test-db-ns)))))
 
     )
   )
