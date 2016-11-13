@@ -5,6 +5,11 @@
 ;one key per namespace
 ;old-segments , active segment per key
 
+(defn get-all-md-for-ns
+  "return the current metadata state for given segment, mainly used for debugging"
+  [namespace]
+  (get @store-meta namespace))
+
 (defn get-namespaces []
   (keys @store-meta))
 
@@ -35,3 +40,15 @@
                                                        (:old-segments (get @store-meta namespace))
                                                        old-segment-id
                                                        old-segment)}))
+
+(defn disable-merged-segments
+  "removes the given id's from old-segments structure"
+  [^String namespace
+   old-segment-id-1
+   old-segment-id-2]
+  (swap! store-meta assoc namespace {:active-segment (:active-segment (get @store-meta namespace))
+                                     :old-segments   (dissoc
+                                                       (:old-segments (get @store-meta namespace))
+                                                       old-segment-id-1
+                                                       old-segment-id-2)})
+  )

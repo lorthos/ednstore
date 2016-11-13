@@ -60,8 +60,7 @@
     ;init the merger
     (reset! exec-pool (Executors/newSingleThreadExecutor))
     (reset! merge-pool
-            (mcon/make-merger-pool! (:merge-trigger-interval-sec e/props)
-                                    s/old-segments))
+            (mcon/make-merger-pool! (:merge-trigger-interval-sec e/props)))
     )
 
   (stop!

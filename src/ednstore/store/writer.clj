@@ -22,7 +22,7 @@
     (swap! (:last-offset segment) + append-offset-length)))
 
 (defn write-to-segment!
-  " used to write to a non-active segment
+  "used to write to a non-active segment
   used by the merge process"
   [k v segment]
   (let [append-offset-length (w/write-pair!! (:wc segment) k v)]
