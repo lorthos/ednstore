@@ -1,13 +1,15 @@
 (ns ednstore.store.reader
   (:require [ednstore.store.segment :as s :refer :all]
             [ednstore.io.read :refer :all]
-            [clojure.tools.logging :as log])
+            [clojure.tools.logging :as log]
+            [ednstore.store.metadata :as md])
   (:import
     (java.util Iterator)
     (ednstore.store.segment SegmentOperationLog)))
 
 (defn read-block! [chan
-                   start-offset]
+                   start-offset
+                   read-val?]
   (let [kl (read-int!! chan)
         k (read-wire-format!! chan kl)
         op_type (read-byte!! chan)]
@@ -16,7 +18,9 @@
             v (read-wire-format!! chan vl)]
         {:key     k :old-offset start-offset :new-offset (+ start-offset 4 kl 1 4 vl)
          :op-type op_type
-         :value   v})
+         :value   (if read-val?
+                    v
+                    nil)})
       {:key     k :old-offset start-offset :new-offset (+ start-offset 4 kl 1)
        :op-type op_type})))
 
@@ -26,7 +30,7 @@
   (do
     (log/debugf "seek to position %s for channel: %s" offset chan)
     (position!! chan offset)
-    (let [block (read-block! chan offset)]
+    (let [block (read-block! chan offset true)]
       (if (= (:op-type block) (byte 41))
         {:key (:key block) :val (:value block)}))))
 
@@ -49,10 +53,10 @@
 
 (defn read-all
   "search for the given key across all indexes of all segments"
-  [k]
-  (if (nil? @s/active-segment)
+  [table k]
+  (if (nil? (md/get-active-segment-for-table table))
     (throw (RuntimeException. "active segment is null!")))
-  (let [all-segments (s/get-all-segments)
+  (let [all-segments (md/get-all-segments table)
         target-segment (first (filter #(segment-has-key? k %) all-segments))]
     (if target-segment
       (read-direct k target-segment)
@@ -70,7 +74,7 @@
   5. reads the value
   6. calculates total bytes read returns the key and new offset"
   [chan offset-atom]
-  (let [block (read-block! chan @offset-atom)]
+  (let [block (read-block! chan @offset-atom false)]
     (reset! offset-atom (:new-offset block))
     (dissoc block :value)))
 

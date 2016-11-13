@@ -5,10 +5,11 @@
             [ednstore.env :as e])
   (:import (ednstore.core SimpleDiskStore)))
 
+(def test-db "load-test1")
+
 (def S (atom nil))
 
 (defn segment-fixture [f]
-  ;(io/delete-file (:path e/props))
   (reset! S (SimpleDiskStore.))
   (initialize! @S e/props)
   (f)
@@ -22,6 +23,6 @@
     (doseq [x (range 1000)]
       (let [v (str x (java.util.UUID/randomUUID))]
         (Thread/sleep 10)
-        (insert! @S x v)))
-    (is (string? (lookup @S 42)))))
+        (insert! @S test-db x v)))
+    (is (string? (lookup @S test-db 42)))))
 

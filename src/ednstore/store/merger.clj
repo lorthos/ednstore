@@ -71,14 +71,16 @@
   "merge the two segments and return a new ReadOnlySegment
 
   Will run in a seperate single background thread"
-  [^ReadOnlySegment older-segment
+  [^String table
+   ^ReadOnlySegment older-segment
    ^ReadOnlySegment newer-segment]
   (log/debugf "Make-merge! oold-segment %s new-segment %s"
               older-segment
               newer-segment)
   (let [oplog (make-oplog-for-new-segment older-segment
                                           newer-segment)
-        new-segment (s/make-new-segment! (dec (:id older-segment)))]
+        new-segment (s/make-new-segment! table
+                                         (dec (:id older-segment)))]
     (log/debugf "Read Oplog: %s" (into [] oplog))
     (log/debugf "segment created: %s" (into {} new-segment))
     (dorun
@@ -89,9 +91,10 @@
                                       older-segment
                                       newer-segment)]
             (log/debugf "Read the following pair %s" pair)
-            (w/write! (:key pair)
-                      (:val pair)
-                      new-segment))
+            (w/write-to-segment!
+              (:key pair)
+              (:val pair)
+              new-segment))
           )
         oplog))
     ;(.flush ^WritableByteChannel (:wc new-segment))

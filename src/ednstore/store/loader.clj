@@ -2,7 +2,8 @@
   (:require [ednstore.common :as c]
             [ednstore.store.segment :refer :all]
             [ednstore.io.read :refer :all]
-            [ednstore.store.reader :as rdr]))
+            [ednstore.store.reader :as rdr]
+            [clojure.tools.logging :as log]))
 
 (defn read-next-key-and-offset-and-increment!
   "given a channel that is at the end position of a record (or at the beginning of the file)
@@ -13,7 +14,7 @@
   5. reads the value
   6. calculates total bytes read returns the key and new offset"
   [chan offset-atom]
-  (let [block (rdr/read-block! chan @offset-atom)]
+  (let [block (rdr/read-block! chan @offset-atom false)]
     (reset! offset-atom (:new-offset block))
     (dissoc block :value :op-type)))
 
@@ -41,8 +42,9 @@
 
 (defn load-read-only-segment
   "given the segment id, load it as a read only segment"
-  [id]
-  (let [segment-file (c/get-segment-file! id)
+  [table id]
+  (log/debugf "Loading read only segment for ns: %s with id: %s" table id)
+  (let [segment-file (c/get-segment-file! table id)
         read-chan (make-read-channel! segment-file)
         loaded (load-index read-chan)]
     (map->ReadOnlySegment

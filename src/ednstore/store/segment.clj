@@ -4,10 +4,9 @@
   (:require
     [ednstore.common :as c]
     [ednstore.io.read :refer :all]
-    [ednstore.io.write :as w]))
-
-(defonce old-segments (atom {}))
-(defonce active-segment (atom nil))
+    [ednstore.io.write :as w]
+    [ednstore.store.metadata :as md]
+    [clojure.tools.logging :as log]))
 
 (defrecord ActiveSegment
   [id index last-offset
@@ -20,13 +19,10 @@
 (defrecord SegmentOperationLog
   [key old-offset new-offset op-type])
 
-(defn get-all-segments []
-  (cons @active-segment (vals @old-segments)))
-
 (defn make-new-segment!
   "make a new segment at the given path with the given id"
-  [id]
-  (let [file (c/get-segment-file! id)]
+  [table id]
+  (let [file (c/get-segment-file! table id)]
     (map->ActiveSegment
       {:id          id
        :index       (atom {})
@@ -50,30 +46,24 @@
   3.close write channel of old active segment and create ReadOnlySegment
   4.move old active segment to old-segment list
   "
-  [id]
-  (let [segment (make-new-segment! id)]
+  [table id]
+  (md/create-ns-metadata! table)
+  (let [new-segment (make-new-segment! table id)
+        old-active (md/get-active-segment-for-table table)]
+    ;first redirect the writes
     ;point to new active segment
-    (if @active-segment
-      (let [old-active @active-segment
-            old-id (:id old-active)]
-        (reset! active-segment segment)
-        (if old-active
-          (do
-            (w/close!! (:wc old-active))
-            (swap! old-segments assoc old-id
-                   (map->ReadOnlySegment {:id    old-id
-                                          :index (:index old-active)
-                                          :rc    (:rc old-active)}))))
-        )
-      (reset! active-segment segment))
-    )
-  @active-segment
-  )
+    (md/set-active-segment-for-table! table new-segment)
+    (log/debugf "rolled new segment, old active was %s" old-active)
+    (when old-active
+      (let [old-id (:id old-active)]
 
-(defn merge-segments!
-  "merge two given segments together, creating a new segment containining
-  cleaned up union of both
-  update old-segments collection to point to newly merged segment and remove the old ones"
-  [^ReadOnlySegment seg1 ^ReadOnlySegment seg2]
-  ;TODO merger implementation
+        ;close the old active segment
+        (w/close!! (:wc old-active))
+        (log/debugf "old segments before roll: %s" (md/get-old-segments table))
+        (md/add-old-segment-for-table! table old-id
+                                    (map->ReadOnlySegment {:id    old-id
+                                                           :index (:index old-active)
+                                                           :rc    (:rc old-active)}))
+        (log/debugf "old segments after roll: %s" (md/get-old-segments table))))
+    (md/get-active-segment-for-table table))
   )

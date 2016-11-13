@@ -7,9 +7,10 @@
             [ednstore.store.merge.controller :as mcon]
             [ednstore.env :as e]
             [clojure.java.io :as io]
-            [clojure.tools.logging :as log])
+            [clojure.tools.logging :as log]
+            [ednstore.store.metadata :as md])
   (:refer ednstore.common :only [IKVStorage])
-  (:import (java.util.concurrent Executors TimeUnit)
+  (:import (java.util.concurrent Executors TimeUnit ExecutorService)
            (java.io File)))
 
 (def exec-pool
@@ -19,58 +20,92 @@
 (def merge-pool
   (atom nil))
 
+(defn load-existing-table! [table]
+  (let [segment-ids (->> (str (:path e/props) table)
+                         clojure.java.io/file
+                         file-seq
+                         (remove #(.isDirectory ^File %))
+                         reverse
+                         (map (comp read-string #(.substring % 0 (.lastIndexOf % ".")) #(.getName ^File %))))]
+    (md/create-ns-metadata! table)
+    (log/infof "About to load the following segments for table %s : %s "
+               table
+               segment-ids)
+    (let [active-segment (s/roll-new-segment! table (inc (first segment-ids)))
+          read-segments (zipmap segment-ids (doall (map #(ldr/load-read-only-segment
+                                                           table
+                                                           %) segment-ids)))]
+      ;TODO shut down existing stuff first or check?
+      (md/set-active-segment-for-table! table active-segment)
+      (md/set-old-segments-for-table! table read-segments))
+    ))
+
+(defn init-new-table! [table]
+  (md/create-ns-metadata! table)
+  (let [active-segment (s/roll-new-segment! table 1000)]
+    (md/set-active-segment-for-table! table active-segment)))
+
+
 (deftype SimpleDiskStore [] IKVStorage
-  (insert! [this k v]
-    (if (< @(:last-offset @s/active-segment)
+  (insert! [this table k v]
+    (log/debugf "write key: %s value: %s to table: %s"
+                k v table)
+
+    (if-not (md/get-active-segment-for-table table)
+      (do
+        (log/infof "Writing no non-existing table, initalizing with default settings")
+        (init-new-table! table)))
+
+    (if (< @(:last-offset (md/get-active-segment-for-table table))
            (:segment-roll-size e/props))
       (c/do-sequential @exec-pool
-                       (wrt/write! k v @s/active-segment))
+                       (wrt/write! table k v))
       (do
-        (log/infof "Segment: %s has reached max size, rolling new" (:id @s/active-segment))
-        (s/roll-new-segment! (inc (:id @s/active-segment)))
-        )))
+        (log/infof "Segment: %s has reached max size, rolling new"
+                   (:id (md/get-active-segment-for-table table)))
+        (s/roll-new-segment! table
+                             (inc (:id (md/get-active-segment-for-table table)))))))
 
-  (delete! [this k]
+  (delete! [this table k]
     (c/do-sequential @exec-pool
-                     (wrt/delete! k @s/active-segment)))
+                     (wrt/delete! table k)))
 
   (lookup
-    [this k]
-    (rdr/read-all k))
+    [this table k]
+    (rdr/read-all table k))
 
-  (initialize! [this c]
-    (.mkdir (io/file (:path c)))
-    ;TODO check for clean init
-    (let [segment-ids (->> (:path c)
-                           clojure.java.io/file
-                           file-seq
-                           (remove #(.isDirectory ^File %))
-                           reverse
-                           (map (comp read-string #(.substring % 0 (.lastIndexOf % ".")) #(.getName ^File %))))]
-      (if-not (empty? segment-ids)
-        (let [active-segment (s/roll-new-segment! (inc (first segment-ids)))
-              read-segments (zipmap segment-ids (doall (map ldr/load-read-only-segment segment-ids)))]
-          ;TODO shut down existing stuff first or check?
-          (reset! s/active-segment active-segment)
-          (reset! s/old-segments read-segments))
-        (let [active-segment (s/roll-new-segment! 1000)]
-          (reset! s/active-segment active-segment))))
+  (initialize! [this config]
+    (.mkdir (io/file (:path config)))
+    (let [existing-tables
+          (into []
+                (map
+                  #(.getName %)
+                  (-> (:path config)
+                      clojure.java.io/file
+                      .listFiles)))]
+      (log/infof "Initializing edn store with existing tables : %s" existing-tables)
+      (doall
+        (map
+          load-existing-table!
+          existing-tables)))
+    (log/infof "Initializing thread pools .....")
     ;init the merger
     (reset! exec-pool (Executors/newSingleThreadExecutor))
     (reset! merge-pool
-            (mcon/make-merger-pool! (:merge-trigger-interval-sec e/props)
-                                    s/old-segments))
+            (mcon/make-merger-pool! (:merge-trigger-interval-sec e/props)))
     )
 
   (stop!
     [this]
     (log/infof "Shutting down db...")
-    (.shutdown @merge-pool)
+    (.shutdown ^ExecutorService @merge-pool)
     (.awaitTermination @merge-pool 1 TimeUnit/MINUTES)
-    (.shutdown @exec-pool)
+    (.shutdown ^ExecutorService @exec-pool)
     (.awaitTermination @exec-pool 1 TimeUnit/MINUTES)
-    (dorun (map s/close-segment! (s/get-all-segments)))
-    (reset! s/active-segment nil)
-    (reset! s/old-segments {})
+    (dorun (map s/close-segment! (flatten
+                                   (map
+                                     md/get-all-segments
+                                     (md/get-tables)))))
+    (reset! md/store-meta {})
     ))
 

@@ -1,15 +1,16 @@
 (ns ednstore.common
   (:require [clojure.java.io :as io]
-            [ednstore.env :as e]))
+            [ednstore.env :as e])
+  (:import (java.io File)))
 
 
 (defprotocol IKVStorage
   (initialize! [this config])
   (stop! [this])
 
-  (insert! [this k v])
-  (delete! [this k])
-  (lookup [this k]))
+  (insert! [this table k v])
+  (delete! [this table k])
+  (lookup [this table k]))
 
 (defmacro do-sequential
   "submit the expression to the sequential executor"
@@ -21,9 +22,10 @@
 
 (defn get-segment-file!
   "based on the segment id and configured folder, get the full file"
-  [id]
+  [table id]
   (let [root-path (:path e/props)
-        file (io/file (str root-path id ".tbl"))]
+        ns-root (str root-path table)
+        file (io/file (str ns-root File/separator id ".tbl"))]
     (io/make-parents file)
     file))
 
