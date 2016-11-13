@@ -21,20 +21,20 @@
 (use-fixtures :each core-fixture)
 
 
-;(deftest simple-functionality-test
-;  (testing "with different types"
-;    (insert! @S test-db "A" "B")
-;    (is (= "B" (lookup @S test-db "A")))
-;    (insert! @S test-db :a :b)
-;    (is (= :b (lookup @S test-db :a)))
-;    (insert! @S test-db :a {:b "c"})
-;    (is (= {:b "c"} (lookup @S test-db :a)))
-;    (is (= "B" (lookup @S test-db "A")))
-;    (delete! @S test-db "A")
-;    (is (nil? (lookup @S test-db "A")))
-;    )
-;  )
-;
+(deftest simple-functionality-test
+  (testing "with different types"
+    (insert! @S test-db "A" "B")
+    (is (= "B" (lookup @S test-db "A")))
+    (insert! @S test-db :a :b)
+    (is (= :b (lookup @S test-db :a)))
+    (insert! @S test-db :a {:b "c"})
+    (is (= {:b "c"} (lookup @S test-db :a)))
+    (is (= "B" (lookup @S test-db "A")))
+    (delete! @S test-db "A")
+    (is (nil? (lookup @S test-db "A")))
+    )
+  )
+
 
 (deftest init-test
   (testing "initialize when data already exists"

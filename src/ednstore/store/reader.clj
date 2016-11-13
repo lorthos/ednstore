@@ -15,12 +15,12 @@
         op_type (read-byte!! chan)]
     (if (= op_type (byte 41))
       (let [vl (read-int!! chan)
-            v (if read-val?
-                (read-wire-format!! chan vl)
-                nil)]
+            v (read-wire-format!! chan vl)]
         {:key     k :old-offset start-offset :new-offset (+ start-offset 4 kl 1 4 vl)
          :op-type op_type
-         :value   v})
+         :value   (if read-val?
+                    v
+                    nil)})
       {:key     k :old-offset start-offset :new-offset (+ start-offset 4 kl 1)
        :op-type op_type})))
 
