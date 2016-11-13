@@ -214,9 +214,11 @@
       (reset! old-seg (lo/load-read-only-segment test-db 600))
       (reset! new-seg (lo/load-read-only-segment test-db 601))
 
-      (make-merge! test-db
-                   @old-seg
-                   @new-seg)
+      ;return some mock id so that we pick another one
+      (with-redefs-fn {#'md/get-active-segment-for-table (fn [_] {:id 602})}
+        #(make-merge! test-db
+                      @old-seg
+                      @new-seg))
 
       (seg/close-segment! @old-seg)
       (seg/close-segment! @new-seg)
@@ -260,3 +262,28 @@
                   (get-mergeable-segments {101 @seg1
                                            102 @seg2
                                            103 @seg3} {:min-size 10})))))))
+
+
+(deftest pick-next-segment-id-form-merge
+  (testing "next available segment id"
+    (is (= 0
+           (pick-next-available-segment-id-for-merge {:id 105}
+                                                     [{:id 100}
+                                                      {:id 101}
+                                                      {:id 102}
+                                                      {:id 103}
+                                                      {:id 104}])))
+    (is (= 2
+           (pick-next-available-segment-id-for-merge {:id 3}
+                                                     [{:id 0}
+                                                      {:id 1}])))
+
+    (is
+      (thrown?
+        RuntimeException
+        (pick-next-available-segment-id-for-merge {:id 3}
+                                                  [{:id 0}
+                                                   {:id 1}
+                                                   {:id 2}])))
+    )
+  )

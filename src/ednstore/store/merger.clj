@@ -4,7 +4,8 @@
             [ednstore.store.reader :as r]
             [ednstore.store.writer :as w]
             [clojure.tools.logging :as log]
-            [ednstore.io.read :refer :all])
+            [ednstore.io.read :refer :all]
+            [ednstore.store.metadata :as md])
   (:import (ednstore.store.segment ReadOnlySegment SegmentOperationLog)))
 
 (defn cleanup-log
@@ -67,6 +68,26 @@
               cleaned-log)
       cleaned-log)))
 
+(defn pick-next-available-segment-id-for-merge
+  "given a list of the old segments, decide on which segment it to use for the new merged segment"
+  [active-segment old-segments]
+  (let [old-segment-ids (map :id old-segments)
+        all-ids (sort < (conj old-segment-ids (:id active-segment)))]
+    (log/infof "old-segment-ids %s" old-segment-ids)
+    (log/infof "all-ids %s" all-ids)
+    (let [candidate (first
+                      (for [a (range 0 (:id active-segment))
+                            :when (not
+                                    (some #(= a %) all-ids))]
+                        a))]
+      (log/infof "Using %s as next segment id for merge" candidate)
+      (if (nil? candidate)
+        (do
+          (log/errorf "cannot proceed with merge, dont know how to create new id. used-ids: %s"
+                      all-ids)
+          (throw (RuntimeException. "cannot proceed with merge, dont know how to create new id")))
+        candidate))))
+
 (defn make-merge!
   "merge the two segments and return a new ReadOnlySegment
 
@@ -80,7 +101,9 @@
   (let [oplog (make-oplog-for-new-segment older-segment
                                           newer-segment)
         new-segment (s/make-new-segment! table
-                                         (dec (:id older-segment)))]
+                                         (pick-next-available-segment-id-for-merge
+                                           (md/get-active-segment-for-table table)
+                                           (vals (md/get-old-segments table))))]
     (log/debugf "Read Oplog: %s" (into [] oplog))
     (log/debugf "segment created: %s" (into {} new-segment))
     (dorun
@@ -97,7 +120,6 @@
               new-segment))
           )
         oplog))
-    ;(.flush ^WritableByteChannel (:wc new-segment))
     (s/close-segment! new-segment)
     (log/debugf "segment after write: %s" (into {} new-segment))
     (:id new-segment)))

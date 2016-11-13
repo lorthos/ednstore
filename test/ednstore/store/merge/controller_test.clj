@@ -54,16 +54,19 @@
 
       (reset! md/store-meta
               {test-db {:active-segment nil
-                           :old-segments {101 @seg1
-                                          102 @seg2
-                                          103 @seg3}}})
+                        :old-segments   {101 @seg1
+                                         102 @seg2
+                                         103 @seg3}}})
 
-      (merge! test-db 101 102)
-      (is (= '(103 100)
-             (map :id
-                  (vals (md/get-old-segments test-db))))
-          "old segments should be dropped and merged segment should be present"
-          )
+      (with-redefs-fn {#'md/get-active-segment-for-table (fn [_] {:id 104})}
+        #(do
+           (merge! test-db 101 102)
+           (is (= '(103 0)
+                  (map :id
+                       (vals (md/get-old-segments test-db))))
+               "old segments should be dropped and merged segment should be present"
+               )))
+
 
       (is (thrown? FileNotFoundException
                    (lo/load-read-only-segment test-db 101))
