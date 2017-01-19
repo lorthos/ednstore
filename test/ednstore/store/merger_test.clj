@@ -256,12 +256,12 @@
       (is (= nil
              (get-mergeable-segments {101 @seg1
                                       102 @seg2
-                                      103 @seg3} {:min-size 1000000})))
+                                      103 @seg3} {:min-mergable-segment-size 1000000})))
       (is (= [101 102]
              (map :id
                   (get-mergeable-segments {101 @seg1
                                            102 @seg2
-                                           103 @seg3} {:min-size 10})))))))
+                                           103 @seg3} {:min-mergable-segment-size 10})))))))
 
 
 (deftest pick-next-segment-id-form-merge

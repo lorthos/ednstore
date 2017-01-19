@@ -10,4 +10,8 @@
                                                     com.sun.jmdk/jmxtools
                                                     com.sun.jmx/jmxri]]
                  [nio "1.0.3"]
-                 [com.taoensso/nippy "2.8.0"]])
+                 [com.taoensso/nippy "2.8.0"]
+
+                 ;[com.stuartsierra/component "0.3.2"]
+
+                 ])

@@ -63,8 +63,11 @@
       (do
         (log/infof "Segment: %s has reached max size, rolling new"
                    (:id (md/get-active-segment-for-table table)))
-        (s/roll-new-segment! table
-                             (inc (:id (md/get-active-segment-for-table table)))))))
+        (if (< (count (md/get-old-segments table)) (:max-segments e/props))
+          (s/roll-new-segment! table
+                               (inc (:id (md/get-active-segment-for-table table))))
+          (log/warnf "Skipped rolling segment, reached max segments"))
+        )))
 
   (delete! [this table k]
     (c/do-sequential @exec-pool

@@ -138,7 +138,7 @@
     (log/debugf "merge-candiates-size : %s" (into [] merge-candiates-size))
     (if (= 2
            (count (filter #(<
-                             (:min-size merge-strategy)
+                             (:min-mergable-segment-size merge-strategy)
                              %)
                           merge-candiates-size)))
       (into [] merge-candiates))))
