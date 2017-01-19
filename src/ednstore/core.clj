@@ -48,7 +48,7 @@
 
 (deftype SimpleDiskStore [] IKVStorage
   (insert! [this table k v]
-    (log/debugf "write key: %s value: %s to table: %s"
+    (log/tracef "write key: %s value: %s to table: %s"
                 k v table)
 
     (if-not (md/get-active-segment-for-table table)
