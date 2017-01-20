@@ -3,7 +3,8 @@
     [ednstore.store.segment]
     [ednstore.io.read :refer :all]
     [ednstore.io.write :as w]
-    [ednstore.store.metadata :as md]))
+    [ednstore.store.metadata :as md]
+    [ednstore.store.segment :as s]))
 
 (defn write!
   "write to the active segment only, should not write to an inactive segment
@@ -41,3 +42,8 @@
     (swap! (:index segment) assoc k @(:last-offset segment))
     (swap! (:last-offset segment) + append-offset-length)))
 
+
+(defn init-new-table! [table]
+  (md/create-ns-metadata! table)
+  (let [active-segment (s/roll-new-segment! table 1000)]
+    (md/set-active-segment-for-table! table active-segment)))

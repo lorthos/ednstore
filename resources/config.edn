@@ -1,8 +1,9 @@
 {
- :path                       "target/segments/"
+ :path                       "/tmp/endstore-host1/segments/"
  :segment-roll-size          25000
  :max-segments               50
  :merge-strategy             {:min-mergable-segment-size 10}
- :merge-trigger-interval-sec 4
+ :merge-trigger-interval-sec 30
  :max-body-size              5000
+ :ednserver                  {:rest-port 8000}
  }

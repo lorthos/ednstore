@@ -14,4 +14,14 @@
 
                  ;[com.stuartsierra/component "0.3.2"]
 
-                 ])
+
+                 ;ednserver
+                 [compojure "1.4.0"]
+                 [http-kit "2.1.19"]
+                 [ring "1.4.0"]
+                 [org.clojure/tools.logging "0.3.1"]
+                 [org.clojure/data.json "0.2.6"]
+                 [org.clojure/tools.cli "0.3.5"]
+                 ]
+  :aot [ednstore.core]
+  )

@@ -3,7 +3,11 @@
             [ednstore.store.segment :refer :all]
             [ednstore.io.read :refer :all]
             [ednstore.store.reader :as rdr]
-            [clojure.tools.logging :as log]))
+            [clojure.tools.logging :as log]
+            [ednstore.env :as e]
+            [ednstore.store.metadata :as md]
+            [ednstore.store.segment :as s])
+  (:import (java.io File)))
 
 (defn read-next-key-and-offset-and-increment!
   "given a channel that is at the end position of a record (or at the beginning of the file)
@@ -51,3 +55,24 @@
       {:id    id
        :index (atom (:index loaded))
        :rc    read-chan})))
+
+
+(defn load-existing-table! [table]
+  (let [segment-ids (->> (str (:path e/props) table)
+                         clojure.java.io/file
+                         file-seq
+                         (remove #(.isDirectory ^File %))
+                         reverse
+                         (map (comp read-string #(.substring % 0 (.lastIndexOf % ".")) #(.getName ^File %))))]
+    (md/create-ns-metadata! table)
+    (log/infof "About to load the following segments for table %s : %s "
+               table
+               segment-ids)
+    (let [active-segment (s/roll-new-segment! table (inc (first segment-ids)))
+          read-segments (zipmap segment-ids (doall (map #(load-read-only-segment
+                                                           table
+                                                           %) segment-ids)))]
+      ;TODO shut down existing stuff first or check?
+      (md/set-active-segment-for-table! table active-segment)
+      (md/set-old-segments-for-table! table read-segments))
+    ))

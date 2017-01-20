@@ -13,40 +13,10 @@
   (:import (java.util.concurrent Executors TimeUnit ExecutorService)
            (java.io File)))
 
-(def exec-pool
-  "Main write thread, all writes are sequential"
-  (atom nil))
-
-(def merge-pool
-  (atom nil))
-
-(defn load-existing-table! [table]
-  (let [segment-ids (->> (str (:path e/props) table)
-                         clojure.java.io/file
-                         file-seq
-                         (remove #(.isDirectory ^File %))
-                         reverse
-                         (map (comp read-string #(.substring % 0 (.lastIndexOf % ".")) #(.getName ^File %))))]
-    (md/create-ns-metadata! table)
-    (log/infof "About to load the following segments for table %s : %s "
-               table
-               segment-ids)
-    (let [active-segment (s/roll-new-segment! table (inc (first segment-ids)))
-          read-segments (zipmap segment-ids (doall (map #(ldr/load-read-only-segment
-                                                           table
-                                                           %) segment-ids)))]
-      ;TODO shut down existing stuff first or check?
-      (md/set-active-segment-for-table! table active-segment)
-      (md/set-old-segments-for-table! table read-segments))
-    ))
-
-(defn init-new-table! [table]
-  (md/create-ns-metadata! table)
-  (let [active-segment (s/roll-new-segment! table 1000)]
-    (md/set-active-segment-for-table! table active-segment)))
+;"Main write thread, all writes are sequential"
 
 
-(deftype SimpleDiskStore [] IKVStorage
+(deftype SimpleDiskStore [exec-pool merge-pool] IKVStorage
   (insert! [this table k v]
     (log/tracef "write key: %s value: %s to table: %s"
                 k v table)
@@ -54,11 +24,11 @@
     (if-not (md/get-active-segment-for-table table)
       (do
         (log/infof "Writing no non-existing table, initalizing with default settings")
-        (init-new-table! table)))
+        (wrt/init-new-table! table)))
 
     (if (< @(:last-offset (md/get-active-segment-for-table table))
            (:segment-roll-size e/props))
-      (c/do-sequential @exec-pool
+      (c/do-sequential exec-pool
                        (wrt/write! table k v))
       (do
         (log/infof "Segment: %s has reached max size, rolling new"
@@ -70,7 +40,7 @@
         )))
 
   (delete! [this table k]
-    (c/do-sequential @exec-pool
+    (c/do-sequential exec-pool
                      (wrt/delete! table k)))
 
   (lookup
@@ -78,6 +48,7 @@
     (rdr/read-all table k))
 
   (initialize! [this config]
+    (log/infof "Starting EdnStore with the following config: %s" config)
     (.mkdir (io/file (:path config)))
     (let [existing-tables
           (into []
@@ -89,22 +60,19 @@
       (log/infof "Initializing edn store with existing tables : %s" existing-tables)
       (doall
         (map
-          load-existing-table!
+          ldr/load-existing-table!
           existing-tables)))
     (log/infof "Initializing thread pools .....")
-    ;init the merger
-    (reset! exec-pool (Executors/newSingleThreadExecutor))
-    (reset! merge-pool
-            (mcon/make-merger-pool! (:merge-trigger-interval-sec e/props)))
+    ;injected
     )
 
   (stop!
     [this]
     (log/infof "Shutting down db...")
-    (.shutdown ^ExecutorService @merge-pool)
-    (.awaitTermination @merge-pool 1 TimeUnit/MINUTES)
-    (.shutdown ^ExecutorService @exec-pool)
-    (.awaitTermination @exec-pool 1 TimeUnit/MINUTES)
+    (.shutdown ^ExecutorService merge-pool)
+    (.awaitTermination merge-pool 1 TimeUnit/MINUTES)
+    (.shutdown ^ExecutorService exec-pool)
+    (.awaitTermination exec-pool 1 TimeUnit/MINUTES)
     (dorun (map s/close-segment! (flatten
                                    (map
                                      md/get-all-segments
