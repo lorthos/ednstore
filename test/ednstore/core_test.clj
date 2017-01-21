@@ -5,15 +5,20 @@
             [ednstore.store.segment :as s]
             [ednstore.store.reader :as r]
             [ednstore.env :as e]
-            [ednstore.store.metadata :as md])
-  (:import (ednstore.core SimpleDiskStore)))
+            [ednstore.store.metadata :as md]
+            [ednstore.store.merge.controller :as mcon])
+  (:import (ednstore.core SimpleDiskStore)
+           (java.util.concurrent Executors)))
 
 (def test-db "core-test1")
 
 (def S (atom nil))
 
 (defn core-fixture [f]
-  (reset! S (SimpleDiskStore.))
+  (let [exec-pool (Executors/newSingleThreadExecutor)
+        merge-pool (mcon/make-merger-pool! 5)]
+    (reset! S (SimpleDiskStore. exec-pool merge-pool))
+    )
   (initialize! @S e/props)
   (f)
   (stop! @S))

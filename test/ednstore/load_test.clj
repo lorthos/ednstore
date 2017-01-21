@@ -2,15 +2,20 @@
   (:require [clojure.test :refer :all]
             [ednstore.common :refer :all]
             [ednstore.core :refer :all]
-            [ednstore.env :as e])
-  (:import (ednstore.core SimpleDiskStore)))
+            [ednstore.env :as e]
+            [ednstore.store.merge.controller :as mcon])
+  (:import (ednstore.core SimpleDiskStore)
+           (java.util.concurrent Executors)))
 
 (def test-db "load-test1")
 
 (def S (atom nil))
 
 (defn segment-fixture [f]
-  (reset! S (SimpleDiskStore.))
+  (let [exec-pool (Executors/newSingleThreadExecutor)
+        merge-pool (mcon/make-merger-pool! 5)]
+    (reset! S (SimpleDiskStore. exec-pool merge-pool))
+    )
   (initialize! @S e/props)
   (f)
   (stop! @S))
